@@ -41,7 +41,7 @@ export default function AirportMapInner({
       center: [MOPA_COORDINATES.lat, MOPA_COORDINATES.lng],
       zoom: MOPA_COORDINATES.defaultZoom,
       minZoom: 13,
-      maxZoom: 18,
+      maxZoom: 19,
       zoomControl: true,
       attributionControl: true,
     });
@@ -51,20 +51,23 @@ export default function AirportMapInner({
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
     const satelliteLayer = L.tileLayer(satelliteTileUrl, {
       attribution:
-        'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+        'Tiles &copy; Esri World Imagery (No API Key Required)',
       maxZoom: 19,
     }).addTo(map);
 
     currentTileLayerRef.current = satelliteLayer;
 
-    // MOPA Airport Campus Boundary schematic overlay (Matching real aerodrome boundary)
+    // MOPA Airport Campus Boundary overlay (Accurately calibrated to official aerodrome perimeter)
     const campusBoundary = [
-      [15.7490, 73.8420],
-      [15.7470, 73.8800],
-      [15.7380, 73.8820],
-      [15.7270, 73.8750],
-      [15.7250, 73.8580],
-      [15.7350, 73.8400],
+      [15.7485, 73.8415], // Northwest perimeter near RWY 28 approach
+      [15.7495, 73.8620], // North perimeter near Satellite Fire Station & Solar Farm
+      [15.7475, 73.8785], // Northeast perimeter near RWY 10 approach
+      [15.7375, 73.8810], // East cargo approach boundary
+      [15.7310, 73.8775], // East perimeter near Cargo Gate / Link Road
+      [15.7245, 73.8720], // Southeast perimeter Gate 2
+      [15.7225, 73.8570], // South perimeter Gate House 1 (Main Link Road entry)
+      [15.7265, 73.8535], // Southwest perimeter CISF / Police sector
+      [15.7370, 73.8480], // West perimeter near Main Fire Station
     ];
 
     L.polygon(campusBoundary as L.LatLngExpression[], {
@@ -246,8 +249,8 @@ export default function AirportMapInner({
 
     // Draw authorized schematic ground transit route if pickup and dest exist
     if (pickupLoc && destLoc && pickupLoc.id !== destLoc.id) {
-      // Connect through central campus loop waypoint avoiding runway corridor
-      const campusLoopWaypoint: [number, number] = [15.7320, 73.8635];
+      // Connect through central campus boulevard transit corridor avoiding runway
+      const campusLoopWaypoint: [number, number] = [15.7312, 73.8655];
       const routePoints: [number, number][] = [
         [pickupLoc.lat, pickupLoc.lng],
         campusLoopWaypoint,

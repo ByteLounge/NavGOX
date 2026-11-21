@@ -20,16 +20,16 @@ import {
 } from './constants';
 
 const STORAGE_KEYS = {
-  LOCATIONS: 'navgox_locations_v2',
-  VEHICLES: 'navgox_vehicles_v2',
-  DRIVERS: 'navgox_drivers_v2',
-  USERS: 'navgox_users_v2',
-  BOOKINGS: 'navgox_bookings_v2',
-  STATUS_HISTORY: 'navgox_status_history_v2',
-  NOTIFICATIONS: 'navgox_notifications_v2',
-  AUDIT_LOGS: 'navgox_audit_logs_v2',
-  SETTINGS: 'navgox_settings_v2',
-  ACTIVE_USER: 'navgox_active_user_v2',
+  LOCATIONS: 'navgox_locations_v3',
+  VEHICLES: 'navgox_vehicles_v3',
+  DRIVERS: 'navgox_drivers_v3',
+  USERS: 'navgox_users_v3',
+  BOOKINGS: 'navgox_bookings_v3',
+  STATUS_HISTORY: 'navgox_status_history_v3',
+  NOTIFICATIONS: 'navgox_notifications_v3',
+  AUDIT_LOGS: 'navgox_audit_logs_v3',
+  SETTINGS: 'navgox_settings_v3',
+  ACTIVE_USER: 'navgox_active_user_v3',
 };
 
 // Initial sample bookings
@@ -188,20 +188,37 @@ function notifySubscribers() {
   });
 }
 
+// In-memory fallback cache for SSR and Node.js testing environments
+const memoryCache: Record<string, string> = {};
+
 function getStored<T>(key: string, defaultValue: T): T {
-  if (typeof window === 'undefined') return defaultValue;
+  if (typeof window === 'undefined') {
+    const cached = memoryCache[key];
+    if (cached) {
+      try {
+        return JSON.parse(cached) as T;
+      } catch {
+        return JSON.parse(JSON.stringify(defaultValue)) as T;
+      }
+    }
+    return JSON.parse(JSON.stringify(defaultValue)) as T;
+  }
   try {
     const raw = localStorage.getItem(key);
-    if (!raw) return defaultValue;
+    if (!raw) return JSON.parse(JSON.stringify(defaultValue)) as T;
     return JSON.parse(raw) as T;
   } catch (e) {
     console.error(`Error reading ${key} from localStorage:`, e);
-    return defaultValue;
+    return JSON.parse(JSON.stringify(defaultValue)) as T;
   }
 }
 
 function setStored<T>(key: string, value: T): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') {
+    memoryCache[key] = JSON.stringify(value);
+    notifySubscribers();
+    return;
+  }
   try {
     localStorage.setItem(key, JSON.stringify(value));
     notifySubscribers();
@@ -397,17 +414,19 @@ export const StorageService = {
 
   // Reset demo data
   resetToDefaults(): void {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem(STORAGE_KEYS.LOCATIONS);
-    localStorage.removeItem(STORAGE_KEYS.VEHICLES);
-    localStorage.removeItem(STORAGE_KEYS.DRIVERS);
-    localStorage.removeItem(STORAGE_KEYS.USERS);
-    localStorage.removeItem(STORAGE_KEYS.BOOKINGS);
-    localStorage.removeItem(STORAGE_KEYS.STATUS_HISTORY);
-    localStorage.removeItem(STORAGE_KEYS.NOTIFICATIONS);
-    localStorage.removeItem(STORAGE_KEYS.AUDIT_LOGS);
-    localStorage.removeItem(STORAGE_KEYS.SETTINGS);
-    localStorage.removeItem(STORAGE_KEYS.ACTIVE_USER);
+    Object.keys(memoryCache).forEach((k) => delete memoryCache[k]);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(STORAGE_KEYS.LOCATIONS);
+      localStorage.removeItem(STORAGE_KEYS.VEHICLES);
+      localStorage.removeItem(STORAGE_KEYS.DRIVERS);
+      localStorage.removeItem(STORAGE_KEYS.USERS);
+      localStorage.removeItem(STORAGE_KEYS.BOOKINGS);
+      localStorage.removeItem(STORAGE_KEYS.STATUS_HISTORY);
+      localStorage.removeItem(STORAGE_KEYS.NOTIFICATIONS);
+      localStorage.removeItem(STORAGE_KEYS.AUDIT_LOGS);
+      localStorage.removeItem(STORAGE_KEYS.SETTINGS);
+      localStorage.removeItem(STORAGE_KEYS.ACTIVE_USER);
+    }
     notifySubscribers();
   },
 };

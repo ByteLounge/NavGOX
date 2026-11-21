@@ -423,6 +423,9 @@ export const BookingService = {
     // When cancelled or rejected, release vehicle and driver
     if (newStatus === 'cancelled' || newStatus === 'rejected') {
       booking.cancelled_at = nowIso;
+      if (notes && !booking.cancellation_reason) {
+        booking.cancellation_reason = notes;
+      }
       this.releaseVehicleAndDriver(booking.assigned_vehicle_id, booking.assigned_driver_id);
     }
 
@@ -511,7 +514,8 @@ export const BookingService = {
     }
 
     booking.cancellation_reason = reason;
-    return this.updateBookingStatus(bookingId, 'cancelled', actorName, actorId, `Cancelled: ${reason}`);
+    StorageService.saveBooking(booking);
+    return this.updateBookingStatus(bookingId, 'cancelled', actorName, actorId, reason);
   },
 
   releaseVehicleAndDriver(vehicleId: string | null, driverId: string | null): void {
