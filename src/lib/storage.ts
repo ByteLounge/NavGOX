@@ -20,16 +20,16 @@ import {
 } from './constants';
 
 const STORAGE_KEYS = {
-  LOCATIONS: 'navgox_locations_v1',
-  VEHICLES: 'navgox_vehicles_v1',
-  DRIVERS: 'navgox_drivers_v1',
-  USERS: 'navgox_users_v1',
-  BOOKINGS: 'navgox_bookings_v1',
-  STATUS_HISTORY: 'navgox_status_history_v1',
-  NOTIFICATIONS: 'navgox_notifications_v1',
-  AUDIT_LOGS: 'navgox_audit_logs_v1',
-  SETTINGS: 'navgox_settings_v1',
-  ACTIVE_USER: 'navgox_active_user_v1',
+  LOCATIONS: 'navgox_locations_v2',
+  VEHICLES: 'navgox_vehicles_v2',
+  DRIVERS: 'navgox_drivers_v2',
+  USERS: 'navgox_users_v2',
+  BOOKINGS: 'navgox_bookings_v2',
+  STATUS_HISTORY: 'navgox_status_history_v2',
+  NOTIFICATIONS: 'navgox_notifications_v2',
+  AUDIT_LOGS: 'navgox_audit_logs_v2',
+  SETTINGS: 'navgox_settings_v2',
+  ACTIVE_USER: 'navgox_active_user_v2',
 };
 
 // Initial sample bookings

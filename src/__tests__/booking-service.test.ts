@@ -171,6 +171,9 @@ describe('MOPA Airport Booking Service Logic', () => {
   });
 
   it('progresses booking through the full airport transit lifecycle and releases resources on complete', () => {
+    // Disable auto-dispatch to test manual dispatcher assignment sequence
+    StorageService.saveSettings({ ...StorageService.getSettings(), auto_dispatch_enabled: false });
+
     // Create new booking for employee
     const newBookingRes = BookingService.createBooking(
       {

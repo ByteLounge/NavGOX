@@ -57,13 +57,14 @@ export default function AirportMapInner({
 
     currentTileLayerRef.current = satelliteLayer;
 
-    // MOPA Airport Campus Boundary schematic overlay
+    // MOPA Airport Campus Boundary schematic overlay (Matching real aerodrome boundary)
     const campusBoundary = [
-      [15.7720, 73.8560],
-      [15.7735, 73.8720],
-      [15.7680, 73.8780],
-      [15.7580, 73.8760],
-      [15.7570, 73.8560],
+      [15.7490, 73.8420],
+      [15.7470, 73.8800],
+      [15.7380, 73.8820],
+      [15.7270, 73.8750],
+      [15.7250, 73.8580],
+      [15.7350, 73.8400],
     ];
 
     L.polygon(campusBoundary as L.LatLngExpression[], {
@@ -76,10 +77,10 @@ export default function AirportMapInner({
       .bindTooltip('MOPA Airport Outer Campus Perimeter', { sticky: true })
       .addTo(map);
 
-    // Runway 09/27 schematic reference (Airside Non-Vehicular Movement Area)
+    // Runway 10/28 schematic reference (Airside Non-Vehicular Movement Area)
     const runwayLine = [
-      [15.7605, 73.8550],
-      [15.7605, 73.8785],
+      [15.7457, 73.8445], // Runway 28 Threshold (West)
+      [15.7431, 73.8771], // Runway 10 Threshold (East)
     ];
 
     L.polyline(runwayLine as L.LatLngExpression[], {
@@ -88,7 +89,7 @@ export default function AirportMapInner({
       opacity: 0.8,
       dashArray: '8, 8',
     })
-      .bindTooltip('Runway 09/27 (Airside - Strictly Restricted to Ground Taxis)', { sticky: true })
+      .bindTooltip('Runway 10/28 (Airside - Strictly Restricted to Ground Taxis)', { sticky: true })
       .addTo(map);
 
     markersLayerRef.current = L.layerGroup().addTo(map);
@@ -246,7 +247,7 @@ export default function AirportMapInner({
     // Draw authorized schematic ground transit route if pickup and dest exist
     if (pickupLoc && destLoc && pickupLoc.id !== destLoc.id) {
       // Connect through central campus loop waypoint avoiding runway corridor
-      const campusLoopWaypoint: [number, number] = [15.7668, 73.8688];
+      const campusLoopWaypoint: [number, number] = [15.7320, 73.8635];
       const routePoints: [number, number][] = [
         [pickupLoc.lat, pickupLoc.lng],
         campusLoopWaypoint,
