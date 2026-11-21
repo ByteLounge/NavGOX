@@ -12,15 +12,20 @@ export default function Footer() {
           {/* Col 1: Platform Info */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-white font-bold text-base">
-              <Bus className="h-5 w-5 text-sky-400" />
-              <span>NavGOX Shuttle</span>
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500 text-slate-950 font-black text-xs">
+                G
+              </div>
+              <div>
+                <span className="text-white font-black tracking-tight">MANOHAR</span>{' '}
+                <span className="text-amber-400 font-bold">AIRPORT</span>
+              </div>
             </div>
             <p className="text-slate-400 leading-relaxed text-xs">
-              Internal ground transportation and campus mobility system designed exclusively for Manohar International Airport (MOPA / GOX), Pernem, Goa.
+              Official inter-campus ground transportation & transit management platform for Manohar International Airport (MOPA / GOX), Pernem, Goa. A GMR Airport.
             </p>
-            <div className="flex items-center gap-2 text-[11px] text-slate-500">
-              <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
-              <span>Campus Transit Operations Online</span>
+            <div className="flex items-center gap-2 text-[11px] text-amber-300">
+              <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Campus Transit Operations Online • Sustainable Greenfield Aerodrome</span>
             </div>
           </div>
 

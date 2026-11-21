@@ -18,10 +18,10 @@ interface AirportMapProps {
 const DynamicAirportMapInner = dynamic(() => import('./AirportMapInner'), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[420px] w-full flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-100 text-slate-500 shadow-sm animate-pulse">
-      <MapPin className="mb-2 h-8 w-8 text-sky-600 animate-bounce" />
-      <span className="text-sm font-medium">Loading MOPA Airport Aerodrome & Campus Map...</span>
-      <span className="text-xs text-slate-400">Rendering authorized internal transport nodes</span>
+    <div className="flex h-[520px] w-full flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-900 text-slate-400 shadow-md animate-pulse">
+      <MapPin className="mb-2 h-10 w-10 text-amber-500 animate-bounce" />
+      <span className="text-sm font-bold text-white">Loading MOPA Airport Aerodrome & Campus Map...</span>
+      <span className="text-xs text-slate-400">Rendering high-resolution satellite imagery & approved transit bays</span>
     </div>
   ),
 });

@@ -114,19 +114,25 @@ export default function Header() {
 
       {/* Primary Navigation Bar */}
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Brand Logo */}
-        <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-md">
-            <Bus className="h-5 w-5 text-sky-400" />
+        {/* Brand Logo with MIA Goa Wave & GMR Airport Motif */}
+        <Link href="/dashboard" className="flex items-center gap-3 group">
+          <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-slate-950 via-slate-900 to-sky-950 text-white shadow-md border border-amber-500/30 group-hover:border-amber-400 transition">
+            <Bus className="h-5 w-5 text-amber-400 group-hover:scale-110 transition duration-300" />
+            <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[8px] font-black text-slate-950 shadow-xs">
+              G
+            </div>
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold tracking-tight text-slate-900">NavGOX</span>
-              <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-bold text-sky-800 tracking-wider">
-                MOPA
+            <div className="flex items-center gap-1.5">
+              <span className="text-base font-black tracking-tight text-slate-900">MANOHAR</span>
+              <span className="text-xs font-bold text-sky-700 uppercase tracking-widest hidden sm:inline">AIRPORT</span>
+              <span className="rounded bg-amber-100 border border-amber-300 px-1.5 py-0.2 text-[9px] font-black text-amber-900 tracking-wider">
+                GOX
               </span>
             </div>
-            <p className="text-[11px] text-slate-500 font-medium">Campus Shuttle System</p>
+            <p className="text-[10px] text-slate-500 font-semibold tracking-wide">
+              A GMR Airport • Campus Shuttle System
+            </p>
           </div>
         </Link>
 

@@ -8,6 +8,7 @@ import { AirportLocation, Booking } from '@/types';
 import BookingCard from '@/components/booking/BookingCard';
 import ActiveBookingCard from '@/components/booking/ActiveBookingCard';
 import AirportMap from '@/components/map/AirportMap';
+import AirportGallery from '@/components/home/AirportGallery';
 import {
   ArrowRight,
   Bus,
@@ -42,11 +43,20 @@ export default function DashboardPage() {
           : all.filter((b) => b.passenger_id === user.id);
 
       const active = userBookings.filter((b) =>
-        ['requested', 'searching', 'assigned', 'driver_accepted', 'driver_arriving', 'arrived_pickup', 'passenger_onboard', 'in_transit'].includes(
-          b.status
-        )
+        [
+          'requested',
+          'searching',
+          'assigned',
+          'driver_accepted',
+          'driver_arriving',
+          'arrived_pickup',
+          'passenger_onboard',
+          'in_transit',
+        ].includes(b.status)
       );
-      const past = userBookings.filter((b) => ['completed', 'cancelled', 'rejected'].includes(b.status));
+      const past = userBookings.filter((b) =>
+        ['completed', 'cancelled', 'rejected'].includes(b.status)
+      );
 
       setMyActiveBookings(active);
       setMyPastBookings(past.slice(0, 5));
@@ -64,27 +74,41 @@ export default function DashboardPage() {
   }, [user, role]);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
-      {/* Welcome Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-sky-950 p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-[radial-gradient(#0284c7_1px,transparent_1px)] [background-size:16px_16px] opacity-20 pointer-events-none" />
-        <div className="relative z-10 max-w-2xl space-y-2">
-          <div className="inline-flex items-center gap-2 rounded-full bg-sky-500/10 border border-sky-400/20 px-3 py-0.5 text-xs font-semibold text-sky-400">
-            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-10">
+      {/* Welcome Banner styled with Official MIA Goa Airport Branding */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-sky-950 p-6 sm:p-8 text-white shadow-xl border border-slate-800">
+        <div
+          className="absolute right-0 top-0 bottom-0 w-1/2 bg-cover bg-center opacity-15 mix-blend-luminosity pointer-events-none"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1542296332-2e4473faf563?auto=format&fit=crop&w=1200&q=80')`,
+          }}
+        />
+        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-[radial-gradient(#eab308_1px,transparent_1px)] [background-size:20px_20px] opacity-15 pointer-events-none" />
+
+        <div className="relative z-10 max-w-2xl space-y-2.5">
+          <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 border border-amber-500/20 px-3 py-1 text-xs font-bold text-amber-300">
+            <Sparkles className="h-3.5 w-3.5 text-amber-400" />
             <span>Manohar International Airport (MOPA / GOX)</span>
+            <span className="text-amber-500/50">•</span>
+            <span className="text-amber-200">A GMR Airport</span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Airport transportation, made simple.
+          <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
+            Airport transportation,{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-sky-400">
+              made simple.
+            </span>
           </h1>
 
-          <p className="text-xs sm:text-sm text-slate-300">
-            Book a ride between locations within Manohar International Airport. Authorized ground vehicle transport connecting terminals, GOX village, ATC, and operational facilities.
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            Book rapid inter-campus ground transportation across passenger arrival bays, GOX Village forecourt, airline offices, CISF security HQ, and operational technical buildings.
           </p>
 
           {user && (
-            <div className="pt-2 text-xs text-sky-300 flex items-center gap-2">
-              <span>Logged in as: <strong>{user.name}</strong></span>
+            <div className="pt-2 text-xs text-sky-300 flex flex-wrap items-center gap-2">
+              <span>
+                Authorized User: <strong>{user.name}</strong>
+              </span>
               <span className="rounded bg-sky-900/60 px-2 py-0.5 text-[10px] uppercase font-bold text-sky-200 border border-sky-700/50">
                 {user.role}
               </span>
@@ -96,19 +120,19 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Active Rides Alert (if any) */}
+      {/* Active Rides in Progress (if any) */}
       {myActiveBookings.length > 0 && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
             <div className="flex items-center gap-2">
               <span className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse" />
-              <h2 className="text-base font-bold text-slate-900">
+              <h2 className="text-lg font-extrabold text-slate-900">
                 Active Rides in Progress ({myActiveBookings.length})
               </h2>
             </div>
             <Link
               href="/history"
-              className="text-xs font-semibold text-sky-600 hover:text-sky-700"
+              className="text-xs font-bold text-sky-600 hover:text-sky-700"
             >
               View all trips →
             </Link>
@@ -122,7 +146,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Main Grid: Booking Card & Campus Map */}
+      {/* Primary Section: Booking Form + Quick Info & Recent History */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Booking Card (7 cols) */}
         <div className="lg:col-span-7">
@@ -137,41 +161,16 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Airport Campus Map & Recent Trips (5 cols) */}
+        {/* Quick Operations Strip & Recent Trip History (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
+          {/* Recent Trip History Card */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
               <div className="flex items-center gap-2">
-                <Compass className="h-5 w-5 text-sky-600" />
-                <h3 className="font-bold text-sm text-slate-900">Campus Ground Network</h3>
-              </div>
-              <span className="rounded bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-800">
-                Aerodrome Chart
-              </span>
-            </div>
-
-            <p className="text-xs text-slate-500">
-              Interactive map of approved transit bays and staff security checkposts.
-            </p>
-
-            <AirportMap
-              locations={locations}
-              pickupId={mapPickupId}
-              destinationId={mapDestId}
-              onSelectPickup={(id) => setMapPickupId(id)}
-              onSelectDestination={(id) => setMapDestId(id)}
-              height="350px"
-            />
-          </div>
-
-          {/* Recent Trip History Preview */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <div className="flex items-center gap-2">
-                <History className="h-4 w-4 text-slate-500" />
+                <History className="h-4 w-4 text-slate-600" />
                 <h3 className="font-bold text-sm text-slate-900">Recent Completed Trips</h3>
               </div>
-              <Link href="/history" className="text-xs font-semibold text-sky-600 hover:text-sky-700">
+              <Link href="/history" className="text-xs font-bold text-sky-600 hover:text-sky-700">
                 View All
               </Link>
             </div>
@@ -181,21 +180,21 @@ export default function DashboardPage() {
                 {myPastBookings.map((bk) => (
                   <div
                     key={bk.id}
-                    className="flex items-center justify-between rounded-xl border border-slate-100 p-2.5 text-xs hover:bg-slate-50 transition"
+                    className="flex items-center justify-between rounded-xl border border-slate-100 p-3 text-xs hover:bg-slate-50 transition"
                   >
                     <div>
                       <div className="font-semibold text-slate-900">
                         {bk.pickup_location_name} → {bk.destination_location_name}
                       </div>
-                      <div className="text-[10px] text-slate-400 font-mono">
+                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">
                         {bk.booking_reference} • {new Date(bk.requested_at).toLocaleDateString()}
                       </div>
                     </div>
                     <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                      className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
                         bk.status === 'completed'
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'bg-rose-50 text-rose-700'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : 'bg-rose-50 text-rose-700 border border-rose-200'
                       }`}
                     >
                       {bk.status}
@@ -204,13 +203,62 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-slate-400 py-3 text-center">
-                No past trips yet. Submit a ride request above to begin.
+              <p className="text-xs text-slate-400 py-4 text-center">
+                No past trips yet. Submit a ride request to begin.
               </p>
             )}
           </div>
+
+          {/* Airport Transit Notice Card */}
+          <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-sky-500/5 p-5 space-y-2 text-xs">
+            <div className="flex items-center gap-2 font-bold text-slate-900">
+              <Sparkles className="h-4 w-4 text-amber-500" />
+              <span>Campus Transit Standard</span>
+            </div>
+            <p className="text-slate-600 leading-relaxed">
+              Manohar International Airport features 100% zero-emission campus transit buggies and low-floor accessible shuttles. All ground operations operate exclusively on authorized perimeter roadways.
+            </p>
+          </div>
         </div>
       </div>
+
+      {/* FULL-WIDTH HORIZONTAL AERODROME MAP SECTION (Occupies Entire Horizontal Box) */}
+      <section className="space-y-4">
+        {/* Horizontal Map Section Header */}
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 border-b border-slate-200 pb-3">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-sky-500/10 border border-sky-500/20 px-3 py-1 text-xs font-bold text-sky-700">
+              <Compass className="h-3.5 w-3.5 text-sky-600" />
+              <span>Full-Width Aerodrome Navigation Map</span>
+            </div>
+            <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">
+              Campus Ground Transit Network
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600">
+              Interactive high-resolution satellite map across the 2,132-acre airport campus. Click any facility to set pickup or destination.
+            </p>
+          </div>
+
+          <span className="text-xs text-slate-500 font-semibold hidden sm:inline">
+            Coordinates: 15.7330° N, 73.8655° E (MOPA Aerodrome)
+          </span>
+        </div>
+
+        {/* Large Horizontal Map Box */}
+        <div className="w-full">
+          <AirportMap
+            locations={locations}
+            pickupId={mapPickupId}
+            destinationId={mapDestId}
+            onSelectPickup={(id) => setMapPickupId(id)}
+            onSelectDestination={(id) => setMapDestId(id)}
+            height="540px"
+          />
+        </div>
+      </section>
+
+      {/* Airport Campus Facilities Photography Gallery */}
+      <AirportGallery />
     </div>
   );
 }
