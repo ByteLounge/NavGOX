@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { AirportLocation } from '@/types';
 import { MOPA_COORDINATES } from '@/lib/constants';
@@ -26,8 +26,11 @@ export default function AirportMapInner({
 }: AirportMapInnerProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const currentTileLayerRef = useRef<L.TileLayer | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const routeLayerRef = useRef<L.Polyline | null>(null);
+
+  const [mapType, setMapType] = useState<'satellite' | 'streets'>('satellite');
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -43,12 +46,16 @@ export default function AirportMapInner({
       attributionControl: true,
     });
 
-    // Official OpenStreetMap public tile server (100% free, no API key required)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Default to Esri World Imagery (High-Resolution Satellite, No API Key Required)
+    const satelliteTileUrl =
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+    const satelliteLayer = L.tileLayer(satelliteTileUrl, {
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
       maxZoom: 19,
     }).addTo(map);
+
+    currentTileLayerRef.current = satelliteLayer;
 
     // MOPA Airport Campus Boundary schematic overlay
     const campusBoundary = [
@@ -60,11 +67,11 @@ export default function AirportMapInner({
     ];
 
     L.polygon(campusBoundary as L.LatLngExpression[], {
-      color: '#0284c7',
-      weight: 1.5,
+      color: '#38bdf8',
+      weight: 2,
       dashArray: '6, 6',
       fillColor: '#0284c7',
-      fillOpacity: 0.04,
+      fillOpacity: 0.08,
     })
       .bindTooltip('MOPA Airport Outer Campus Perimeter', { sticky: true })
       .addTo(map);
@@ -77,8 +84,8 @@ export default function AirportMapInner({
 
     L.polyline(runwayLine as L.LatLngExpression[], {
       color: '#ef4444',
-      weight: 4,
-      opacity: 0.4,
+      weight: 5,
+      opacity: 0.8,
       dashArray: '8, 8',
     })
       .bindTooltip('Runway 09/27 (Airside - Strictly Restricted to Ground Taxis)', { sticky: true })
@@ -92,6 +99,38 @@ export default function AirportMapInner({
       mapInstanceRef.current = null;
     };
   }, []);
+
+  // Handle switching between Satellite and Street View
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if (currentTileLayerRef.current) {
+      currentTileLayerRef.current.remove();
+    }
+
+    if (mapType === 'satellite') {
+      const satLayer = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {
+          attribution: 'Tiles &copy; Esri World Imagery (No API Key Required)',
+          maxZoom: 19,
+        }
+      ).addTo(map);
+      satLayer.bringToBack();
+      currentTileLayerRef.current = satLayer;
+    } else {
+      const osmLayer = L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        {
+          attribution: '&copy; OpenStreetMap contributors (No API Key Required)',
+          maxZoom: 19,
+        }
+      ).addTo(map);
+      osmLayer.bringToBack();
+      currentTileLayerRef.current = osmLayer;
+    }
+  }, [mapType]);
 
   // Update Markers and Route when locations, pickupId, or destinationId change
   useEffect(() => {
@@ -117,7 +156,6 @@ export default function AirportMapInner({
       let pinColor = '#0f172a'; // standard dark slate
       let pinBorder = '#ffffff';
       let size = 28;
-      let label = loc.name;
 
       if (isPickup) {
         pinColor = '#0284c7'; // airport blue
@@ -141,7 +179,7 @@ export default function AirportMapInner({
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.25);
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
           color: white;
           font-weight: bold;
           font-size: 11px;
@@ -160,7 +198,7 @@ export default function AirportMapInner({
 
       const marker = L.marker([loc.lat, loc.lng], { icon });
 
-      let popupContent = `
+      const popupContent = `
         <div style="font-family: sans-serif; font-size: 12px; min-width: 180px;">
           <div style="font-weight: 700; color: #0f172a; font-size: 14px; margin-bottom: 2px;">${loc.name}</div>
           <div style="display: inline-block; padding: 2px 6px; background-color: #f1f5f9; border-radius: 4px; font-size: 10px; font-weight: 600; color: #475569; margin-bottom: 6px;">
@@ -216,9 +254,9 @@ export default function AirportMapInner({
       ];
 
       const polyline = L.polyline(routePoints, {
-        color: '#0284c7',
+        color: '#38bdf8',
         weight: 5,
-        opacity: 0.85,
+        opacity: 0.95,
         dashArray: '8, 8',
       }).addTo(map);
 
@@ -239,19 +277,50 @@ export default function AirportMapInner({
   }, [locations, pickupId, destinationId, onSelectPickup, onSelectDestination]);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm" style={{ height }}>
+    <div
+      className="relative w-full overflow-hidden rounded-xl border border-slate-200 bg-slate-900 shadow-sm"
+      style={{ height }}
+    >
       <div ref={mapContainerRef} className="h-full w-full" />
-      <div className="absolute bottom-2 left-2 z-[400] flex flex-wrap items-center gap-2 rounded-lg bg-white/95 px-3 py-1.5 text-xs font-medium text-slate-700 shadow-md backdrop-blur">
+
+      {/* Top Right: Satellite vs Streets View Switcher */}
+      <div className="absolute top-2 right-2 z-[400] flex rounded-lg bg-slate-950/90 p-1 shadow-lg backdrop-blur-md border border-slate-700">
+        <button
+          type="button"
+          onClick={() => setMapType('satellite')}
+          className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold transition ${
+            mapType === 'satellite'
+              ? 'bg-sky-600 text-white shadow-xs'
+              : 'text-slate-300 hover:text-white'
+          }`}
+        >
+          <span>🛰️ Satellite</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMapType('streets')}
+          className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-bold transition ${
+            mapType === 'streets'
+              ? 'bg-sky-600 text-white shadow-xs'
+              : 'text-slate-300 hover:text-white'
+          }`}
+        >
+          <span>🗺️ Streets</span>
+        </button>
+      </div>
+
+      {/* Bottom Left Legend */}
+      <div className="absolute bottom-2 left-2 z-[400] flex flex-wrap items-center gap-2 rounded-lg bg-slate-950/90 px-3 py-1.5 text-xs font-medium text-white shadow-md backdrop-blur-md border border-slate-700">
         <div className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-[#0284c7]" />
+          <span className="h-3 w-3 rounded-full bg-[#0284c7] ring-1 ring-white" />
           <span>Pickup</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-[#059669]" />
+          <span className="h-3 w-3 rounded-full bg-[#059669] ring-1 ring-white" />
           <span>Destination</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="h-3 w-3 rounded-full bg-[#d97706]" />
+          <span className="h-3 w-3 rounded-full bg-[#d97706] ring-1 ring-white" />
           <span>Restricted / Staff Area</span>
         </div>
         <div className="text-[11px] text-slate-400">| GOX Campus Ground Roads</div>
