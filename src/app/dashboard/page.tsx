@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { StorageService } from '@/lib/storage';
@@ -10,16 +10,10 @@ import ActiveBookingCard from '@/components/booking/ActiveBookingCard';
 import AirportMap from '@/components/map/AirportMap';
 import AirportGallery from '@/components/home/AirportGallery';
 import {
-  ArrowRight,
-  Bus,
-  CheckCircle2,
-  Clock,
+  Car,
   Compass,
   History,
-  MapPin,
-  ShieldCheck,
   Sparkles,
-  Users,
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -27,55 +21,40 @@ export default function DashboardPage() {
   const [locations, setLocations] = useState<AirportLocation[]>([]);
   const [myActiveBookings, setMyActiveBookings] = useState<Booking[]>([]);
   const [myPastBookings, setMyPastBookings] = useState<Booking[]>([]);
-  const [mapPickupId, setMapPickupId] = useState<string>('loc-01');
-  const [mapDestId, setMapDestId] = useState<string>('loc-04');
+  const [mapPickupId, setMapPickupId] = useState<string>('loc-08');
+  const [mapDestId, setMapDestId] = useState<string>('loc-07');
 
-  const refreshData = () => {
-    const locs = StorageService.getLocations(role);
-    setLocations(locs);
+  const refreshData = useCallback(() => {
+    setLocations(StorageService.getLocations());
 
     if (user) {
       const all = StorageService.getBookings();
-      // If employee/passenger, show their own bookings. If admin/dispatcher, show active operations bookings.
-      const userBookings =
-        role === 'admin' || role === 'dispatcher'
-          ? all
-          : all.filter((b) => b.passenger_id === user.id);
+      const userBookings = all.filter((b) => b.staff_id === user.id);
 
       const active = userBookings.filter((b) =>
-        [
-          'requested',
-          'searching',
-          'assigned',
-          'driver_accepted',
-          'driver_arriving',
-          'arrived_pickup',
-          'passenger_onboard',
-          'in_transit',
-        ].includes(b.status)
+        ['requested', 'driver_accepted', 'in_transit'].includes(b.status)
       );
       const past = userBookings.filter((b) =>
-        ['completed', 'cancelled', 'rejected'].includes(b.status)
+        ['completed', 'cancelled'].includes(b.status)
       );
 
       setMyActiveBookings(active);
       setMyPastBookings(past.slice(0, 5));
     }
-  };
+  }, [user]);
 
   useEffect(() => {
-    refreshData();
-    const unsub = StorageService.subscribe(() => {
-      refreshData();
-    });
+    const timer = setTimeout(refreshData, 0);
+    const unsub = StorageService.subscribe(refreshData);
     return () => {
+      clearTimeout(timer);
       unsub();
     };
-  }, [user, role]);
+  }, [refreshData]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-10">
-      {/* Welcome Banner styled with Official MIA Goa Airport Branding */}
+      {/* Staff Welcome Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-sky-950 p-6 sm:p-8 text-white shadow-xl border border-slate-800">
         <div
           className="absolute right-0 top-0 bottom-0 w-1/2 bg-cover bg-center opacity-15 mix-blend-luminosity pointer-events-none"
@@ -85,56 +64,60 @@ export default function DashboardPage() {
         />
         <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-[radial-gradient(#eab308_1px,transparent_1px)] [background-size:20px_20px] opacity-15 pointer-events-none" />
 
-        <div className="relative z-10 max-w-2xl space-y-2.5">
-          <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 border border-amber-500/20 px-3 py-1 text-xs font-bold text-amber-300">
-            <Sparkles className="h-3.5 w-3.5 text-amber-400" />
-            <span>Manohar International Airport (MOPA / GOX)</span>
-            <span className="text-amber-500/50">•</span>
-            <span className="text-amber-200">A GMR Airport</span>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="max-w-2xl space-y-2.5">
+            <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 border border-amber-500/20 px-3 py-1 text-xs font-bold text-amber-300">
+              <Sparkles className="h-3.5 w-3.5 text-amber-400" />
+              <span>Manohar International Airport (MOPA / GOX)</span>
+            </div>
+
+            <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
+              Staff Pickup & Drop-off
+            </h1>
+
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Request a campus driver to pick you up and drop you off at any location inside the airport premises.
+            </p>
+
+            {user && (
+              <div className="pt-1 text-xs text-sky-300 flex flex-wrap items-center gap-2">
+                <span>
+                  Signed in: <strong>{user.name}</strong>
+                </span>
+                <span className="rounded bg-sky-900/60 px-2 py-0.5 text-[10px] uppercase font-bold text-sky-200 border border-sky-700/50">
+                  {user.role}
+                </span>
+                {user.department && (
+                  <span className="text-slate-400 hidden sm:inline">• {user.department}</span>
+                )}
+              </div>
+            )}
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
-            Airport transportation,{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-sky-400">
-              made simple.
-            </span>
-          </h1>
-
-          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-            Book rapid inter-campus ground transportation across passenger arrival bays, GOX Village forecourt, airline offices, CISF security HQ, and operational technical buildings.
-          </p>
-
-          {user && (
-            <div className="pt-2 text-xs text-sky-300 flex flex-wrap items-center gap-2">
-              <span>
-                Authorized User: <strong>{user.name}</strong>
-              </span>
-              <span className="rounded bg-sky-900/60 px-2 py-0.5 text-[10px] uppercase font-bold text-sky-200 border border-sky-700/50">
-                {user.role}
-              </span>
-              {user.department && (
-                <span className="text-slate-400 hidden sm:inline">• {user.department}</span>
-              )}
-            </div>
+          {role === 'driver' && (
+            <Link
+              href="/driver"
+              className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-5 py-3 text-xs font-bold uppercase tracking-wider text-slate-950 hover:bg-amber-400 transition self-start"
+            >
+              <Car className="h-4 w-4" />
+              <span>Go to Driver Desk</span>
+            </Link>
           )}
         </div>
       </div>
 
-      {/* Active Rides in Progress (if any) */}
+      {/* Active Rides in Progress */}
       {myActiveBookings.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between border-b border-slate-200 pb-2">
             <div className="flex items-center gap-2">
               <span className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse" />
               <h2 className="text-lg font-extrabold text-slate-900">
-                Active Rides in Progress ({myActiveBookings.length})
+                Active Rides ({myActiveBookings.length})
               </h2>
             </div>
-            <Link
-              href="/history"
-              className="text-xs font-bold text-sky-600 hover:text-sky-700"
-            >
-              View all trips →
+            <Link href="/history" className="text-xs font-bold text-sky-600 hover:text-sky-700">
+              View all rides →
             </Link>
           </div>
 
@@ -146,9 +129,8 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Primary Section: Booking Form + Quick Info & Recent History */}
+      {/* Primary Section: Pickup Request Card + Recent Rides */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Booking Card (7 cols) */}
         <div className="lg:col-span-7">
           <BookingCard
             locations={locations}
@@ -161,14 +143,12 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Quick Operations Strip & Recent Trip History (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Recent Trip History Card */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
               <div className="flex items-center gap-2">
                 <History className="h-4 w-4 text-slate-600" />
-                <h3 className="font-bold text-sm text-slate-900">Recent Completed Trips</h3>
+                <h3 className="font-bold text-sm text-slate-900">Recent Completed Rides</h3>
               </div>
               <Link href="/history" className="text-xs font-bold text-sky-600 hover:text-sky-700">
                 View All
@@ -178,8 +158,9 @@ export default function DashboardPage() {
             {myPastBookings.length > 0 ? (
               <div className="space-y-2">
                 {myPastBookings.map((bk) => (
-                  <div
+                  <Link
                     key={bk.id}
+                    href={`/booking/${bk.id}`}
                     className="flex items-center justify-between rounded-xl border border-slate-100 p-3 text-xs hover:bg-slate-50 transition"
                   >
                     <div>
@@ -199,52 +180,45 @@ export default function DashboardPage() {
                     >
                       {bk.status}
                     </span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (
               <p className="text-xs text-slate-400 py-4 text-center">
-                No past trips yet. Submit a ride request to begin.
+                No past rides yet. Request a pickup to begin.
               </p>
             )}
           </div>
 
-          {/* Airport Transit Notice Card */}
           <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-sky-500/5 p-5 space-y-2 text-xs">
             <div className="flex items-center gap-2 font-bold text-slate-900">
               <Sparkles className="h-4 w-4 text-amber-500" />
-              <span>Campus Transit Standard</span>
+              <span>Airport Premises Coverage</span>
             </div>
             <p className="text-slate-600 leading-relaxed">
-              Manohar International Airport features 100% zero-emission campus transit buggies and low-floor accessible shuttles. All ground operations operate exclusively on authorized perimeter roadways.
+              Every active stop—from Arrival & Terminal to ATC, GMR, CISF, Cargo Gates, Maintenance, and Fire Stations—is available for direct staff pickup and drop-off.
             </p>
           </div>
         </div>
       </div>
 
-      {/* FULL-WIDTH HORIZONTAL AERODROME MAP SECTION (Occupies Entire Horizontal Box) */}
+      {/* Interactive Airport Map */}
       <section className="space-y-4">
-        {/* Horizontal Map Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 border-b border-slate-200 pb-3">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-sky-500/10 border border-sky-500/20 px-3 py-1 text-xs font-bold text-sky-700">
               <Compass className="h-3.5 w-3.5 text-sky-600" />
-              <span>Full-Width Aerodrome Navigation Map</span>
+              <span>Aerodrome Navigation Map</span>
             </div>
             <h2 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">
-              Campus Ground Transit Network
+              Airport Campus Pickup & Drop-off Points
             </h2>
             <p className="text-xs sm:text-sm text-slate-600">
-              Interactive high-resolution satellite map across the 2,132-acre airport campus. Click any facility to set pickup or destination.
+              Click any stop below or on the map to set your pickup or drop-off location.
             </p>
           </div>
-
-          <span className="text-xs text-slate-500 font-semibold hidden sm:inline">
-            Coordinates: 15.7330° N, 73.8655° E (MOPA Aerodrome)
-          </span>
         </div>
 
-        {/* Large Horizontal Map Box */}
         <div className="w-full">
           <AirportMap
             locations={locations}
@@ -252,12 +226,11 @@ export default function DashboardPage() {
             destinationId={mapDestId}
             onSelectPickup={(id) => setMapPickupId(id)}
             onSelectDestination={(id) => setMapDestId(id)}
-            height="540px"
+            height="520px"
           />
         </div>
       </section>
 
-      {/* Airport Campus Facilities Photography Gallery */}
       <AirportGallery />
     </div>
   );

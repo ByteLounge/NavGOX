@@ -1,14 +1,11 @@
 import {
   AirportLocation,
-  AuditLog,
   Booking,
-  BookingStatus,
   BookingStatusHistory,
   Driver,
   NotificationItem,
   SystemSettings,
   UserProfile,
-  UserRole,
   Vehicle,
 } from '@/types';
 import {
@@ -20,28 +17,27 @@ import {
 } from './constants';
 
 const STORAGE_KEYS = {
-  LOCATIONS: 'navgox_locations_v3',
-  VEHICLES: 'navgox_vehicles_v3',
-  DRIVERS: 'navgox_drivers_v3',
-  USERS: 'navgox_users_v3',
-  BOOKINGS: 'navgox_bookings_v3',
-  STATUS_HISTORY: 'navgox_status_history_v3',
-  NOTIFICATIONS: 'navgox_notifications_v3',
-  AUDIT_LOGS: 'navgox_audit_logs_v3',
-  SETTINGS: 'navgox_settings_v3',
-  ACTIVE_USER: 'navgox_active_user_v3',
+  LOCATIONS: 'navgox_locations_v4',
+  VEHICLES: 'navgox_vehicles_v4',
+  DRIVERS: 'navgox_drivers_v4',
+  USERS: 'navgox_users_v4',
+  BOOKINGS: 'navgox_bookings_v4',
+  STATUS_HISTORY: 'navgox_status_history_v4',
+  NOTIFICATIONS: 'navgox_notifications_v4',
+  SETTINGS: 'navgox_settings_v4',
+  ACTIVE_USER: 'navgox_active_user_v4',
 };
 
-// Initial sample bookings
+// Initial sample staff pickup & drop-off bookings
 const SEED_BOOKINGS: Booking[] = [
   {
     id: 'bk-1001',
     booking_reference: 'MOPA-2026-00041',
-    passenger_id: 'usr-employee-1',
-    passenger_name: 'Vikram Joshi',
-    passenger_phone: '+91 98230 44556',
-    passenger_role: 'employee',
-    passenger_badge: 'GGIAL-EMP-4089',
+    staff_id: 'usr-staff-1',
+    staff_name: 'Vikram Joshi',
+    staff_phone: '+91 98230 44556',
+    staff_badge: 'GGIAL-EMP-4089',
+    staff_department: 'Airport Operations & Terminal Services',
     pickup_location_id: 'loc-08', // GMR Office
     pickup_location_name: 'GMR Office',
     destination_location_id: 'loc-07', // ATC Office
@@ -49,64 +45,63 @@ const SEED_BOOKINGS: Booking[] = [
     passenger_count: 2,
     booking_type: 'now',
     scheduled_at: null,
-    status: 'in_transit',
-    assigned_driver_id: 'drv-01',
-    assigned_driver: SEED_DRIVERS[0],
-    assigned_vehicle_id: 'veh-01',
-    assigned_vehicle: SEED_VEHICLES[0],
+    status: 'requested',
+    assigned_driver_id: null,
+    assigned_driver: null,
+    assigned_vehicle_id: null,
+    assigned_vehicle: null,
     special_requirements: {
       luggage_assistance: false,
       wheelchair_accessible: false,
-      special_assistance: false,
-      notes: 'Attending joint airspace safety review at ATC',
+      notes: 'Waiting at GMR Office main entrance',
     },
-    notes: 'Escorting technical consultant',
-    requested_at: '2026-11-21T14:45:00Z',
-    assigned_at: '2026-11-21T14:47:00Z',
-    started_at: '2026-11-21T14:52:00Z',
-    updated_at: '2026-11-21T14:55:00Z',
+    notes: 'Waiting at GMR Office main entrance',
+    requested_at: '2026-11-25T14:45:00Z',
+    updated_at: '2026-11-25T14:45:00Z',
   },
   {
     id: 'bk-1002',
     booking_reference: 'MOPA-2026-00042',
-    passenger_id: 'usr-passenger-1',
-    passenger_name: 'Sunita Sharma',
-    passenger_phone: '+91 98230 11223',
-    passenger_role: 'passenger',
-    pickup_location_id: 'loc-01', // Arrival
-    pickup_location_name: 'Arrival',
-    destination_location_id: 'loc-04', // Gox Village
-    destination_location_name: 'Gox Village / Forecourt',
-    passenger_count: 3,
+    staff_id: 'usr-staff-2',
+    staff_name: 'Priya Deshpande',
+    staff_phone: '+91 98230 55112',
+    staff_badge: 'CISF-MOPA-214',
+    staff_department: 'CISF Security & Cargo Verification',
+    pickup_location_id: 'loc-03', // Main Terminal Building
+    pickup_location_name: 'Main Terminal Building',
+    destination_location_id: 'loc-14', // Cargo Building
+    destination_location_name: 'Cargo Building',
+    passenger_count: 1,
     booking_type: 'now',
     scheduled_at: null,
-    status: 'arrived_pickup',
+    status: 'in_transit',
     assigned_driver_id: 'drv-02',
     assigned_driver: SEED_DRIVERS[1],
     assigned_vehicle_id: 'veh-02',
     assigned_vehicle: SEED_VEHICLES[1],
     special_requirements: {
-      luggage_assistance: true,
+      luggage_assistance: false,
       wheelchair_accessible: false,
-      special_assistance: false,
-      notes: 'Family with 2 trolley bags',
+      notes: 'Inspection shift handover at Cargo bay',
     },
-    notes: 'Standing near Gate 2 pillar B',
-    requested_at: '2026-11-21T15:00:00Z',
-    assigned_at: '2026-11-21T15:02:00Z',
-    updated_at: '2026-11-21T15:08:00Z',
+    notes: 'Inspection shift handover at Cargo bay',
+    requested_at: '2026-11-25T14:30:00Z',
+    accepted_at: '2026-11-25T14:31:00Z',
+    started_at: '2026-11-25T14:35:00Z',
+    updated_at: '2026-11-25T14:35:00Z',
   },
   {
     id: 'bk-1003',
     booking_reference: 'MOPA-2026-00043',
-    passenger_id: 'usr-passenger-1',
-    passenger_name: 'Sunita Sharma',
-    passenger_phone: '+91 98230 11223',
-    passenger_role: 'passenger',
-    pickup_location_id: 'loc-05', // Parking
-    pickup_location_name: 'Airport Parking',
-    destination_location_id: 'loc-02', // Departure
-    destination_location_name: 'Departure',
+    staff_id: 'usr-staff-1',
+    staff_name: 'Vikram Joshi',
+    staff_phone: '+91 98230 44556',
+    staff_badge: 'GGIAL-EMP-4089',
+    staff_department: 'Airport Operations & Terminal Services',
+    pickup_location_id: 'loc-09', // Admin Building
+    pickup_location_name: 'Admin Building',
+    destination_location_id: 'loc-20', // Airline Engineering and Maintenance Building
+    destination_location_name: 'Airline Engineering and Maintenance Building',
     passenger_count: 1,
     booking_type: 'now',
     scheduled_at: null,
@@ -117,61 +112,37 @@ const SEED_BOOKINGS: Booking[] = [
     assigned_vehicle: SEED_VEHICLES[2],
     special_requirements: {
       luggage_assistance: false,
-      wheelchair_accessible: true,
-      special_assistance: true,
+      wheelchair_accessible: false,
     },
-    notes: 'Elderly passenger needing assistance to departure gate',
-    requested_at: '2026-11-21T12:10:00Z',
-    assigned_at: '2026-11-21T12:12:00Z',
-    started_at: '2026-11-21T12:18:00Z',
-    completed_at: '2026-11-21T12:30:00Z',
-    updated_at: '2026-11-21T12:30:00Z',
-  },
-];
-
-const SEED_AUDIT_LOGS: AuditLog[] = [
-  {
-    id: 'aud-01',
-    timestamp: '2026-11-21T14:47:00Z',
-    actor_name: 'Pooja Mandrekar',
-    actor_role: 'dispatcher',
-    action: 'DISPATCH_ASSIGNMENT',
-    target_entity: 'booking',
-    entity_id: 'bk-1001',
-    details: 'Assigned Vehicle Shuttle Alpha 1 (GA-11-A-1024) and Driver Rajesh Naik to MOPA-2026-00041',
-  },
-  {
-    id: 'aud-02',
-    timestamp: '2026-11-21T15:02:00Z',
-    actor_name: 'Pooja Mandrekar',
-    actor_role: 'dispatcher',
-    action: 'DISPATCH_ASSIGNMENT',
-    target_entity: 'booking',
-    entity_id: 'bk-1002',
-    details: 'Assigned Vehicle Buggy Eco-Glide 1 and Driver Amit Sawant to MOPA-2026-00042',
+    notes: 'GSE bay inspection',
+    requested_at: '2026-11-25T12:10:00Z',
+    accepted_at: '2026-11-25T12:12:00Z',
+    started_at: '2026-11-25T12:18:00Z',
+    completed_at: '2026-11-25T12:28:00Z',
+    updated_at: '2026-11-25T12:28:00Z',
   },
 ];
 
 const SEED_NOTIFICATIONS: NotificationItem[] = [
   {
     id: 'notif-01',
-    user_id: 'usr-passenger-1',
-    booking_id: 'bk-1002',
-    title: 'Driver Arrived at Pickup',
-    message: 'Amit Sawant (GA-11-EV-0101) has arrived at Arrival. Please proceed to the vehicle.',
-    type: 'success',
+    user_id: 'usr-driver-1',
+    booking_id: 'bk-1001',
+    title: 'New Staff Pickup Request',
+    message: 'Vikram Joshi requested a pickup from GMR Office to ATC Office (2 pax).',
+    type: 'info',
     is_read: false,
-    created_at: '2026-11-21T15:08:00Z',
+    created_at: '2026-11-25T14:45:00Z',
   },
   {
     id: 'notif-02',
-    user_id: 'usr-employee-1',
-    booking_id: 'bk-1001',
-    title: 'Ride In Transit',
-    message: 'Your campus transit to ATC Office is currently underway with Driver Rajesh Naik.',
-    type: 'info',
-    is_read: true,
-    created_at: '2026-11-21T14:55:00Z',
+    user_id: 'usr-staff-2',
+    booking_id: 'bk-1002',
+    title: 'In Transit to Cargo Building',
+    message: 'Driver Amit Sawant (GA-11-EV-0101) is taking you to Cargo Building.',
+    type: 'success',
+    is_read: false,
+    created_at: '2026-11-25T14:35:00Z',
   },
 ];
 
@@ -235,40 +206,14 @@ export const StorageService = {
     };
   },
 
-  // --- Locations ---
-  getLocations(userRole?: UserRole): AirportLocation[] {
+  // --- Locations (All active airport premises stops available to staff & drivers) ---
+  getLocations(): AirportLocation[] {
     const all = getStored<AirportLocation[]>(STORAGE_KEYS.LOCATIONS, SEED_LOCATIONS);
-    if (!userRole || userRole === 'admin' || userRole === 'dispatcher') {
-      return all;
-    }
-    // Filter restricted locations for passengers
-    if (userRole === 'passenger') {
-      return all.filter((loc) => loc.is_active && (!loc.is_restricted || loc.restricted_roles.includes('passenger')));
-    }
-    // Employees and Drivers can see authorized locations
-    return all.filter(
-      (loc) => loc.is_active && (!loc.is_restricted || loc.restricted_roles.includes(userRole))
-    );
+    return all.filter((loc) => loc.is_active);
   },
 
-  getAllLocationsAdmin(): AirportLocation[] {
+  getAllLocations(): AirportLocation[] {
     return getStored<AirportLocation[]>(STORAGE_KEYS.LOCATIONS, SEED_LOCATIONS);
-  },
-
-  saveLocation(location: AirportLocation): void {
-    const all = this.getAllLocationsAdmin();
-    const idx = all.findIndex((l) => l.id === location.id);
-    if (idx >= 0) {
-      all[idx] = location;
-    } else {
-      all.push(location);
-    }
-    setStored(STORAGE_KEYS.LOCATIONS, all);
-  },
-
-  deleteLocation(id: string): void {
-    const all = this.getAllLocationsAdmin().filter((l) => l.id !== id);
-    setStored(STORAGE_KEYS.LOCATIONS, all);
   },
 
   // --- Vehicles ---
@@ -362,21 +307,6 @@ export const StorageService = {
     setStored(STORAGE_KEYS.STATUS_HISTORY, all);
   },
 
-  // --- Audit Logs ---
-  getAuditLogs(): AuditLog[] {
-    return getStored<AuditLog[]>(STORAGE_KEYS.AUDIT_LOGS, SEED_AUDIT_LOGS);
-  },
-
-  addAuditLog(entry: Omit<AuditLog, 'id' | 'timestamp'>): void {
-    const all = this.getAuditLogs();
-    all.unshift({
-      id: `aud-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      ...entry,
-    });
-    setStored(STORAGE_KEYS.AUDIT_LOGS, all);
-  },
-
   // --- Notifications ---
   getNotifications(userId?: string): NotificationItem[] {
     const all = getStored<NotificationItem[]>(STORAGE_KEYS.NOTIFICATIONS, SEED_NOTIFICATIONS);
@@ -387,7 +317,7 @@ export const StorageService = {
   addNotification(item: Omit<NotificationItem, 'id' | 'created_at'>): void {
     const all = getStored<NotificationItem[]>(STORAGE_KEYS.NOTIFICATIONS, SEED_NOTIFICATIONS);
     all.unshift({
-      id: `notif-${Date.now()}`,
+      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
       created_at: new Date().toISOString(),
       ...item,
     });
@@ -408,24 +338,11 @@ export const StorageService = {
     return getStored<SystemSettings>(STORAGE_KEYS.SETTINGS, DEFAULT_SYSTEM_SETTINGS);
   },
 
-  saveSettings(settings: SystemSettings): void {
-    setStored(STORAGE_KEYS.SETTINGS, settings);
-  },
-
   // Reset demo data
   resetToDefaults(): void {
     Object.keys(memoryCache).forEach((k) => delete memoryCache[k]);
     if (typeof window !== 'undefined') {
-      localStorage.removeItem(STORAGE_KEYS.LOCATIONS);
-      localStorage.removeItem(STORAGE_KEYS.VEHICLES);
-      localStorage.removeItem(STORAGE_KEYS.DRIVERS);
-      localStorage.removeItem(STORAGE_KEYS.USERS);
-      localStorage.removeItem(STORAGE_KEYS.BOOKINGS);
-      localStorage.removeItem(STORAGE_KEYS.STATUS_HISTORY);
-      localStorage.removeItem(STORAGE_KEYS.NOTIFICATIONS);
-      localStorage.removeItem(STORAGE_KEYS.AUDIT_LOGS);
-      localStorage.removeItem(STORAGE_KEYS.SETTINGS);
-      localStorage.removeItem(STORAGE_KEYS.ACTIVE_USER);
+      Object.values(STORAGE_KEYS).forEach((key) => localStorage.removeItem(key));
     }
     notifySubscribers();
   },

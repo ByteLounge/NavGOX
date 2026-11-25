@@ -5,20 +5,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { DEMO_USERS } from '@/lib/constants';
-import {
-  Bus,
-  CheckCircle2,
-  Lock,
-  Mail,
-  Shield,
-  ShieldCheck,
-  User,
-  Users,
-} from 'lucide-react';
+import { UserRole } from '@/types';
+import { Bus, Lock, Mail, Users } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, switchPersona, user } = useAuth();
+  const { login, switchPersona } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -26,21 +18,21 @@ export default function LoginPage() {
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {
-      setError('Please provide an email address.');
+      setError('Please provide your airport email address.');
       return;
     }
 
-    const success = login(email.trim());
-    if (success) {
-      router.push('/dashboard');
+    const signedIn = login(email.trim());
+    if (signedIn) {
+      router.push(signedIn.role === 'driver' ? '/driver' : '/dashboard');
     } else {
       setError('Invalid credentials.');
     }
   };
 
-  const handlePersonaLogin = (demoRole: any) => {
-    switchPersona(demoRole);
-    router.push('/dashboard');
+  const handlePersonaLogin = (id: string, targetRole: UserRole) => {
+    switchPersona(id);
+    router.push(targetRole === 'driver' ? '/driver' : '/dashboard');
   };
 
   return (
@@ -53,16 +45,16 @@ export default function LoginPage() {
           Sign In to NavGOX
         </h1>
         <p className="text-xs text-slate-500">
-          Manohar International Airport (MOPA / GOX) Campus Shuttle System
+          Manohar International Airport (MOPA / GOX) Staff & Driver Transit
         </p>
       </div>
 
-      {/* 1-Click Persona Login Shortcuts for Instant Testing */}
+      {/* 1-Click Staff / Driver Persona Shortcuts */}
       <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-4 space-y-2.5 shadow-2xs">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-bold text-sky-950 uppercase tracking-wider flex items-center gap-1.5">
             <Users className="h-3.5 w-3.5 text-sky-600" />
-            <span>1-Click Test Persona Sign In</span>
+            <span>1-Click Staff & Driver Sign In</span>
           </span>
           <span className="text-[10px] text-sky-700 font-semibold">Instant Access</span>
         </div>
@@ -71,7 +63,7 @@ export default function LoginPage() {
             <button
               key={demo.id}
               type="button"
-              onClick={() => handlePersonaLogin(demo.role)}
+              onClick={() => handlePersonaLogin(demo.id, demo.role)}
               className="flex items-center justify-between rounded-xl bg-white border border-sky-200/80 p-2.5 text-left text-xs hover:border-sky-400 hover:bg-sky-50/50 transition"
             >
               <div>
@@ -88,7 +80,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Standard Form */}
+      {/* Email Form */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <form onSubmit={handleLoginSubmit} className="space-y-4">
           {error && (
@@ -108,7 +100,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="passenger@mopa.aero"
+                placeholder="name@mopa.aero"
                 className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2 text-xs text-slate-900 focus:border-sky-500 focus:outline-hidden"
               />
             </div>
@@ -139,7 +131,7 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-4 pt-3 border-t border-slate-100 text-center text-xs text-slate-500">
-          Need an airport employee transport account?{' '}
+          New airport staff member or driver?{' '}
           <Link href="/register" className="font-semibold text-sky-600 hover:text-sky-700">
             Register here
           </Link>

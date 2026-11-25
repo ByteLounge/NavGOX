@@ -8,11 +8,8 @@ import {
   CheckCircle2,
   LogOut,
   Mail,
-  MapPin,
   Phone,
   Shield,
-  ShieldAlert,
-  User,
 } from 'lucide-react';
 
 export default function ProfilePage() {
@@ -36,14 +33,13 @@ export default function ProfilePage() {
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
       <div className="border-b border-slate-200 pb-3">
         <h1 className="text-xl font-extrabold tracking-tight text-slate-900">
-          Airport Ground Transport ID & Profile
+          Airport Transit ID & Profile
         </h1>
         <p className="text-xs text-slate-500">
-          User identification and authorized campus zone clearance
+          User details and campus pickup/drop-off role
         </p>
       </div>
 
-      {/* Profile Card */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-5">
           <div className="flex items-center gap-4">
@@ -57,7 +53,7 @@ export default function ProfilePage() {
                   {user.role}
                 </span>
               </div>
-              <div className="text-xs text-slate-500">{user.department || 'Airport Passenger'}</div>
+              <div className="text-xs text-slate-500">{user.department || 'Airport Staff'}</div>
             </div>
           </div>
 
@@ -67,11 +63,10 @@ export default function ProfilePage() {
             className="flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition self-start sm:self-auto"
           >
             <LogOut className="h-4 w-4" />
-            <span>Sign Out</span>
+            <span>Reset Session</span>
           </button>
         </div>
 
-        {/* Contact and Credential Details */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-3.5 space-y-1">
             <span className="text-[10px] uppercase font-semibold text-slate-400 flex items-center gap-1">
@@ -92,13 +87,13 @@ export default function ProfilePage() {
               <Shield className="h-3 w-3" /> Airport Access Badge
             </span>
             <div className="font-semibold text-slate-900 font-mono">
-              {user.badge_number || 'Standard Passenger Pass'}
+              {user.badge_number || 'Staff Pass'}
             </div>
           </div>
 
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-3.5 space-y-1">
             <span className="text-[10px] uppercase font-semibold text-slate-400 flex items-center gap-1">
-              <Building2 className="h-3 w-3" /> Organization
+              <Building2 className="h-3 w-3" /> Department
             </span>
             <div className="font-semibold text-slate-900">
               {user.department || 'Manohar International Airport (MOPA)'}
@@ -106,22 +101,15 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Role Permissions Summary */}
         <div className="rounded-xl border border-sky-100 bg-sky-50/60 p-4 space-y-2 text-xs">
           <h4 className="font-bold text-sky-950 flex items-center gap-1.5">
             <CheckCircle2 className="h-4 w-4 text-sky-600" />
-            <span>Authorized Transport Permissions</span>
+            <span>Role Capabilities</span>
           </h4>
           <p className="text-slate-600 text-[11px] leading-relaxed">
-            {role === 'admin'
-              ? 'Super Administrator access: Unlimited transit clearance across all 21 public, administrative, and restricted airside perimeter checkpoints.'
-              : role === 'dispatcher'
-              ? 'IOCC Dispatcher clearance: Full access to vehicle dispatch, driver staging, and operational bookings.'
-              : role === 'driver'
-              ? 'Certified Driver clearance: Access to driver operations console, vehicle acceptance, and assigned route navigation.'
-              : role === 'employee'
-              ? 'Verified Employee clearance: Permitted to book shuttle transit to ATC Office, GMR Headquarters, Cargo complexes, and Maintenance buildings.'
-              : 'Passenger clearance: Permitted to book transportation between public arrival, departure kerbsides, terminal entrances, GOX village, and parking areas.'}
+            {role === 'driver'
+              ? 'Campus Driver: View incoming pickup requests from airport staff, accept rides, confirm staff pickup, and complete drop-offs across all 21 airport premises stops.'
+              : 'Airport Staff: Request immediate or scheduled pickups and drop-offs between any of the 21 terminals, offices, cargo gates, maintenance bays, and security checkpoints within the airport premises.'}
           </p>
         </div>
       </div>

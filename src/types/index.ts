@@ -1,8 +1,7 @@
-export type UserRole = 'passenger' | 'employee' | 'driver' | 'dispatcher' | 'admin';
+export type UserRole = 'staff' | 'driver';
 
 export type LocationCategory =
-  | 'Passenger Area'
-  | 'Terminal'
+  | 'Terminal & Forecourt'
   | 'Airport Administration'
   | 'Security'
   | 'Cargo'
@@ -21,8 +20,6 @@ export interface AirportLocation {
   pickup_allowed: boolean;
   dropoff_allowed: boolean;
   is_active: boolean;
-  is_restricted: boolean;
-  restricted_roles: UserRole[]; // If empty or contains 'passenger', visible to public passengers
   operating_hours: string;
   icon_name: string;
 }
@@ -35,7 +32,7 @@ export type VehicleType =
   | 'VIP Van'
   | 'Other';
 
-export type VehicleStatus = 'available' | 'assigned' | 'on_trip' | 'maintenance' | 'offline';
+export type VehicleStatus = 'available' | 'on_trip' | 'maintenance' | 'offline';
 
 export interface Vehicle {
   id: string;
@@ -52,7 +49,7 @@ export interface Vehicle {
   last_maintenance_date: string;
 }
 
-export type DriverStatus = 'available' | 'assigned' | 'on_trip' | 'offline' | 'on_break';
+export type DriverStatus = 'available' | 'on_trip' | 'offline' | 'on_break';
 
 export interface Driver {
   id: string;
@@ -71,35 +68,27 @@ export interface Driver {
 
 export type BookingStatus =
   | 'requested'
-  | 'searching'
-  | 'assigned'
   | 'driver_accepted'
-  | 'driver_arriving'
-  | 'arrived_pickup'
-  | 'passenger_onboard'
   | 'in_transit'
   | 'completed'
-  | 'cancelled'
-  | 'rejected';
+  | 'cancelled';
 
 export type BookingType = 'now' | 'scheduled';
 
 export interface SpecialRequirements {
   luggage_assistance: boolean;
   wheelchair_accessible: boolean;
-  special_assistance: boolean;
-  priority_escort?: boolean;
   notes?: string;
 }
 
 export interface Booking {
   id: string;
   booking_reference: string; // e.g. MOPA-2026-00001
-  passenger_id: string;
-  passenger_name: string;
-  passenger_phone: string;
-  passenger_role: UserRole;
-  passenger_badge?: string;
+  staff_id: string;
+  staff_name: string;
+  staff_phone: string;
+  staff_badge?: string;
+  staff_department?: string;
   pickup_location_id: string;
   pickup_location_name: string;
   destination_location_id: string;
@@ -116,7 +105,7 @@ export interface Booking {
   notes: string;
   cancellation_reason?: string;
   requested_at: string;
-  assigned_at?: string;
+  accepted_at?: string;
   started_at?: string;
   completed_at?: string;
   cancelled_at?: string;
@@ -156,25 +145,12 @@ export interface UserProfile {
   created_at: string;
 }
 
-export interface AuditLog {
-  id: string;
-  timestamp: string;
-  actor_name: string;
-  actor_role: UserRole;
-  action: string;
-  target_entity: string;
-  entity_id: string;
-  details: string;
-}
-
 export interface SystemSettings {
   campus_name: string;
   airport_code: string;
-  auto_dispatch_enabled: boolean;
   max_passenger_per_booking: number;
   emergency_helpline: string;
   dispatch_desk_phone: string;
   cisf_control_phone: string;
   operating_hours: string;
-  allow_public_registrations: boolean;
 }

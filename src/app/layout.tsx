@@ -7,9 +7,9 @@ import Footer from '@/components/layout/Footer';
 import BottomNav from '@/components/layout/BottomNav';
 
 export const metadata: Metadata = {
-  title: 'NavGOX | MOPA Airport Inter-Campus Transport System',
+  title: 'NavGOX | MOPA Airport Staff & Driver Campus Transit',
   description:
-    'Dedicated internal campus ground transportation management platform exclusively for Manohar International Airport (MOPA / GOX), Pernem, Goa.',
+    'Internal airport premises pickup and drop-off platform for Manohar International Airport (MOPA / GOX) staff and drivers.',
 };
 
 export default function RootLayout({
@@ -29,7 +29,7 @@ export default function RootLayout({
             <Suspense
               fallback={
                 <div className="flex min-h-[50vh] items-center justify-center p-8 text-xs font-semibold text-slate-400">
-                  Loading MOPA Campus Transport...
+                  Loading MOPA Staff Transit...
                 </div>
               }
             >

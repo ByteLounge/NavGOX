@@ -1,20 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { StorageService } from '@/lib/storage';
 import { Booking, BookingStatus } from '@/types';
-import {
-  Calendar,
-  Car,
-  ChevronRight,
-  Filter,
-  History,
-  MapPin,
-  Search,
-  User,
-} from 'lucide-react';
+import { ChevronRight, History, Search } from 'lucide-react';
 
 export default function BookingHistoryPage() {
   const { user, role } = useAuth();
@@ -22,77 +13,77 @@ export default function BookingHistoryPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const refreshData = () => {
+  const refreshData = useCallback(() => {
     const all = StorageService.getBookings();
-    if (user) {
-      if (role === 'admin' || role === 'dispatcher') {
-        setBookings(all);
-      } else {
-        setBookings(all.filter((b) => b.passenger_id === user.id));
-      }
+    if (!user) return;
+
+    if (role === 'driver') {
+      const drivers = StorageService.getDrivers();
+      const drv = drivers.find(
+        (d) =>
+          d.email.toLowerCase() === user.email.toLowerCase() ||
+          d.contact_number === user.phone ||
+          d.full_name === user.name
+      );
+      setBookings(drv ? all.filter((b) => b.assigned_driver_id === drv.id) : []);
+    } else {
+      setBookings(all.filter((b) => b.staff_id === user.id));
     }
-  };
+  }, [user, role]);
 
   useEffect(() => {
-    refreshData();
-    const unsub = StorageService.subscribe(() => {
-      refreshData();
-    });
+    const timer = setTimeout(refreshData, 0);
+    const unsub = StorageService.subscribe(refreshData);
     return () => {
+      clearTimeout(timer);
       unsub();
     };
-  }, [user, role]);
+  }, [refreshData]);
 
   const filteredBookings = bookings.filter((b) => {
     if (statusFilter !== 'all' && b.status !== statusFilter) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchRef = b.booking_reference.toLowerCase().includes(q);
-      const matchPickup = b.pickup_location_name.toLowerCase().includes(q);
-      const matchDest = b.destination_location_name.toLowerCase().includes(q);
-      return matchRef || matchPickup || matchDest;
+      return (
+        b.booking_reference.toLowerCase().includes(q) ||
+        b.pickup_location_name.toLowerCase().includes(q) ||
+        b.destination_location_name.toLowerCase().includes(q) ||
+        b.staff_name.toLowerCase().includes(q)
+      );
     }
     return true;
   });
 
   const statusColors: Record<BookingStatus, string> = {
     requested: 'bg-amber-100 text-amber-800',
-    searching: 'bg-amber-100 text-amber-800',
-    assigned: 'bg-sky-100 text-sky-800',
     driver_accepted: 'bg-sky-100 text-sky-800',
-    driver_arriving: 'bg-indigo-100 text-indigo-800',
-    arrived_pickup: 'bg-purple-100 text-purple-800',
-    passenger_onboard: 'bg-teal-100 text-teal-800',
     in_transit: 'bg-emerald-100 text-emerald-800',
     completed: 'bg-slate-100 text-slate-700',
     cancelled: 'bg-rose-100 text-rose-800',
-    rejected: 'bg-rose-100 text-rose-800',
   };
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <h1 className="text-xl font-extrabold tracking-tight text-slate-900">
-            Booking History & Trip Records
+            {role === 'driver' ? 'Driver Trip History' : 'My Campus Ride History'}
           </h1>
           <p className="text-xs text-slate-500">
-            {role === 'admin' || role === 'dispatcher'
-              ? 'All campus transportation bookings across MOPA airport'
-              : 'Your requested and completed campus journeys'}
+            {role === 'driver'
+              ? 'Staff pickups and drop-offs handled by you inside airport premises'
+              : 'Your requested, active, and completed rides across airport premises'}
           </p>
         </div>
 
         <Link
-          href="/dashboard"
+          href={role === 'driver' ? '/driver' : '/dashboard'}
           className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 transition shadow-xs self-start sm:self-auto"
         >
-          Book New Ride
+          {role === 'driver' ? 'Open Driver Desk' : 'Request New Pickup'}
         </Link>
       </div>
 
-      {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
@@ -100,30 +91,29 @@ export default function BookingHistoryPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search reference, pickup, or destination..."
+            placeholder="Search reference, pickup, or drop-off..."
             className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 py-2 text-xs text-slate-900 focus:border-sky-500 focus:outline-hidden"
           />
         </div>
 
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-          {['all', 'in_transit', 'completed', 'cancelled'].map((st) => (
+          {['all', 'requested', 'driver_accepted', 'in_transit', 'completed', 'cancelled'].map((st) => (
             <button
               key={st}
               type="button"
               onClick={() => setStatusFilter(st)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider transition ${
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-wider whitespace-nowrap transition ${
                 statusFilter === st
                   ? 'bg-slate-900 text-white'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {st}
+              {st.replace('_', ' ')}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Bookings List Cards */}
       <div className="space-y-3">
         {filteredBookings.length > 0 ? (
           filteredBookings.map((bk) => (
@@ -138,7 +128,10 @@ export default function BookingHistoryPage() {
                   </span>
                   <span className="text-xs text-slate-400">
                     • {new Date(bk.requested_at).toLocaleDateString()} at{' '}
-                    {new Date(bk.requested_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(bk.requested_at).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </span>
                 </div>
 
@@ -154,7 +147,7 @@ export default function BookingHistoryPage() {
               <div className="mt-3.5 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                 <div>
                   <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
-                    Transit Route
+                    Pickup → Drop-off
                   </span>
                   <div className="font-bold text-slate-900 mt-0.5">
                     {bk.pickup_location_name} → {bk.destination_location_name}
@@ -163,18 +156,20 @@ export default function BookingHistoryPage() {
 
                 <div>
                   <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
-                    Assigned Vehicle & Driver
+                    {role === 'driver' ? 'Staff Member' : 'Driver & Vehicle'}
                   </span>
                   <div className="font-medium text-slate-800 mt-0.5">
-                    {bk.assigned_vehicle && bk.assigned_driver
+                    {role === 'driver'
+                      ? `${bk.staff_name} (${bk.staff_badge || 'Staff'})`
+                      : bk.assigned_vehicle && bk.assigned_driver
                       ? `${bk.assigned_driver.full_name} (${bk.assigned_vehicle.registration_number})`
-                      : 'Unassigned / Released'}
+                      : 'Waiting for Driver'}
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0">
                   <div className="text-right sm:block hidden">
-                    <span className="text-[10px] text-slate-400 block">Passengers</span>
+                    <span className="text-[10px] text-slate-400 block">Riders</span>
                     <span className="font-bold text-slate-800">{bk.passenger_count} pax</span>
                   </div>
 
@@ -192,7 +187,7 @@ export default function BookingHistoryPage() {
         ) : (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-white py-16 text-center text-xs text-slate-400">
             <History className="mx-auto h-8 w-8 text-slate-300 mb-2" />
-            <p className="font-semibold text-slate-700">No Booking Records Found</p>
+            <p className="font-semibold text-slate-700">No Ride Records Found</p>
             <p className="mt-1">Try adjusting your search query or status filter.</p>
           </div>
         )}

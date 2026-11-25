@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { StorageService } from '@/lib/storage';
@@ -11,7 +11,6 @@ import {
   Check,
   CheckCheck,
   CheckCircle2,
-  Clock,
   Info,
 } from 'lucide-react';
 
@@ -19,21 +18,20 @@ export default function NotificationsPage() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
-  const refreshNotifs = () => {
+  const refreshNotifs = useCallback(() => {
     if (user) {
       setNotifications(StorageService.getNotifications(user.id));
     }
-  };
+  }, [user]);
 
   useEffect(() => {
-    refreshNotifs();
-    const unsub = StorageService.subscribe(() => {
-      refreshNotifs();
-    });
+    const timer = setTimeout(refreshNotifs, 0);
+    const unsub = StorageService.subscribe(refreshNotifs);
     return () => {
+      clearTimeout(timer);
       unsub();
     };
-  }, [user]);
+  }, [refreshNotifs]);
 
   const handleMarkAsRead = (id: string) => {
     StorageService.markNotificationAsRead(id);

@@ -1,30 +1,20 @@
 'use client';
 
-import React, { use, useState, useEffect } from 'react';
+import React, { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { StorageService } from '@/lib/storage';
-import { Booking, BookingStatus } from '@/types';
+import { Booking } from '@/types';
 import BookingTimeline from '@/components/booking/BookingTimeline';
 import AirportMap from '@/components/map/AirportMap';
 import { useAuth } from '@/lib/auth-context';
 import { BookingService } from '@/lib/booking-service';
 import {
-  Accessibility,
   AlertTriangle,
   ArrowLeft,
-  Briefcase,
   Car,
-  CheckCircle2,
   Clock,
   Compass,
-  MapPin,
-  Navigation,
   Phone,
-  Shield,
-  ShieldAlert,
-  User,
-  Users,
   X,
 } from 'lucide-react';
 
@@ -34,55 +24,51 @@ interface PageProps {
 
 export default function BookingDetailPage({ params }: PageProps) {
   const unwrappedParams = use(params);
-  const router = useRouter();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [cancelError, setCancelError] = useState<string | null>(null);
 
-  const refreshBooking = () => {
+  const refreshBooking = useCallback(() => {
     const b = StorageService.getBookingById(unwrappedParams.id);
     setBooking(b || null);
-  };
+  }, [unwrappedParams.id]);
 
   useEffect(() => {
-    refreshBooking();
-    const unsub = StorageService.subscribe(() => {
-      refreshBooking();
-    });
+    const timer = setTimeout(refreshBooking, 0);
+    const unsub = StorageService.subscribe(refreshBooking);
     return () => {
+      clearTimeout(timer);
       unsub();
     };
-  }, [unwrappedParams.id]);
+  }, [refreshBooking]);
 
   if (!booking) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center space-y-4">
         <Car className="mx-auto h-12 w-12 text-slate-300" />
-        <h2 className="text-lg font-bold text-slate-800">Booking Reference Not Found</h2>
+        <h2 className="text-lg font-bold text-slate-800">Ride Reference Not Found</h2>
         <p className="text-xs text-slate-500">
-          We could not find booking record <strong>{unwrappedParams.id}</strong>.
+          We could not find ride record <strong>{unwrappedParams.id}</strong>.
         </p>
         <Link
-          href="/dashboard"
+          href={role === 'driver' ? '/driver' : '/dashboard'}
           className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span>Return to Dashboard</span>
+          <span>Return</span>
         </Link>
       </div>
     );
   }
 
-  const canCancel = ['requested', 'searching', 'assigned', 'driver_accepted', 'driver_arriving'].includes(
-    booking.status
-  );
+  const canCancel = ['requested', 'driver_accepted'].includes(booking.status);
 
   const handleCancelSubmit = () => {
     if (!user) return;
     if (!cancelReason.trim()) {
-      setCancelError('Please select or specify a reason for cancellation.');
+      setCancelError('Please select a reason for cancellation.');
       return;
     }
 
@@ -97,19 +83,18 @@ export default function BookingDetailPage({ params }: PageProps) {
       setIsCancelModalOpen(false);
       refreshBooking();
     } else {
-      setCancelError(res.error || 'Failed to cancel booking.');
+      setCancelError(res.error || 'Failed to cancel ride request.');
     }
   };
 
-  const allLocations = StorageService.getAllLocationsAdmin();
+  const allLocations = StorageService.getAllLocations();
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
-      {/* Top Breadcrumb & Reference Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="flex items-center gap-3">
           <Link
-            href="/dashboard"
+            href={role === 'driver' ? '/driver' : '/dashboard'}
             className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -125,7 +110,10 @@ export default function BookingDetailPage({ params }: PageProps) {
             </div>
             <p className="text-xs text-slate-500">
               Requested on {new Date(booking.requested_at).toLocaleDateString()} at{' '}
-              {new Date(booking.requested_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {new Date(booking.requested_at).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
             </p>
           </div>
         </div>
@@ -136,33 +124,32 @@ export default function BookingDetailPage({ params }: PageProps) {
             onClick={() => setIsCancelModalOpen(true)}
             className="rounded-xl border border-rose-200 bg-white px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition self-start sm:self-auto"
           >
-            Cancel Booking Request
+            Cancel Ride Request
           </button>
         )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Visual Step Timeline & Vehicle Card (7 cols) */}
         <div className="lg:col-span-7 space-y-6">
-          {/* Status Timeline Card */}
+          {/* Status Timeline */}
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 mb-5">
-              Live Transit Progress Workflow
+              Live Pickup & Drop-off Progress
             </h2>
             <BookingTimeline
               status={booking.status}
               requestedAt={booking.requested_at}
-              assignedAt={booking.assigned_at}
+              acceptedAt={booking.accepted_at}
               startedAt={booking.started_at}
               completedAt={booking.completed_at}
               cancelledAt={booking.cancelled_at}
             />
           </div>
 
-          {/* Assigned Driver & Vehicle Card */}
+          {/* Assigned Driver & Vehicle */}
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-100 pb-2">
-              Vehicle & Operator Assigned
+              Driver & Vehicle
             </h2>
 
             {booking.assigned_vehicle && booking.assigned_driver ? (
@@ -177,7 +164,10 @@ export default function BookingDetailPage({ params }: PageProps) {
                         {booking.assigned_driver.full_name}
                       </div>
                       <div className="text-xs text-slate-500">
-                        Airport Driver ID: <span className="font-mono font-semibold">{booking.assigned_driver.badge_number}</span>
+                        Driver Badge:{' '}
+                        <span className="font-mono font-semibold">
+                          {booking.assigned_driver.badge_number}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -193,21 +183,35 @@ export default function BookingDetailPage({ params }: PageProps) {
 
                 <div className="grid grid-cols-2 gap-3 rounded-xl border border-slate-100 bg-slate-50/80 p-3.5 text-xs">
                   <div>
-                    <span className="text-slate-400 block text-[10px] uppercase font-semibold">Vehicle Model</span>
+                    <span className="text-slate-400 block text-[10px] uppercase font-semibold">
+                      Vehicle
+                    </span>
                     <span className="font-bold text-slate-900">{booking.assigned_vehicle.name}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block text-[10px] uppercase font-semibold">Registration Number</span>
-                    <span className="font-mono font-bold text-sky-700">{booking.assigned_vehicle.registration_number}</span>
+                    <span className="text-slate-400 block text-[10px] uppercase font-semibold">
+                      Plate Number
+                    </span>
+                    <span className="font-mono font-bold text-sky-700">
+                      {booking.assigned_vehicle.registration_number}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block text-[10px] uppercase font-semibold">Category</span>
-                    <span className="font-medium text-slate-800">{booking.assigned_vehicle.vehicle_type}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px] uppercase font-semibold">Accessibility</span>
+                    <span className="text-slate-400 block text-[10px] uppercase font-semibold">
+                      Vehicle Type
+                    </span>
                     <span className="font-medium text-slate-800">
-                      {booking.assigned_vehicle.accessibility_features ? 'Wheelchair Equipped' : 'Standard'}
+                      {booking.assigned_vehicle.vehicle_type}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px] uppercase font-semibold">
+                      Accessibility
+                    </span>
+                    <span className="font-medium text-slate-800">
+                      {booking.assigned_vehicle.accessibility_features
+                        ? 'Wheelchair Equipped'
+                        : 'Standard'}
                     </span>
                   </div>
                 </div>
@@ -215,27 +219,25 @@ export default function BookingDetailPage({ params }: PageProps) {
             ) : (
               <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/50 p-6 text-center text-xs text-amber-800">
                 <Clock className="mx-auto h-8 w-8 text-amber-600 mb-2 animate-spin" />
-                <p className="font-bold">Allocating Nearest Available Shuttle</p>
+                <p className="font-bold">Waiting for Available Driver</p>
                 <p className="mt-1 text-slate-600 max-w-sm mx-auto">
-                  The IOCC Dispatch Controller or automated scheduling engine is matching a vehicle compatible with your passenger count ({booking.passenger_count} pax).
+                  Your pickup request is live on the Driver Desk. An available campus driver will accept it shortly ({booking.passenger_count} pax).
                 </p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Right Column: Route Map & Trip Specifications (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
-          {/* Map Preview */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Compass className="h-4 w-4 text-sky-600" />
                 <h3 className="font-bold text-xs uppercase tracking-wider text-slate-900">
-                  Approved Internal Ground Path
+                  Airport Premises Route
                 </h3>
               </div>
-              <span className="text-[11px] text-slate-400 font-mono">Schematic Route</span>
+              <span className="text-[11px] text-slate-400 font-mono">Campus Map</span>
             </div>
 
             <AirportMap
@@ -252,8 +254,12 @@ export default function BookingDetailPage({ params }: PageProps) {
                   A
                 </div>
                 <div>
-                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Pickup Bay</div>
-                  <div className="text-xs font-bold text-slate-900">{booking.pickup_location_name}</div>
+                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Pickup Stop
+                  </div>
+                  <div className="text-xs font-bold text-slate-900">
+                    {booking.pickup_location_name}
+                  </div>
                 </div>
               </div>
 
@@ -262,40 +268,53 @@ export default function BookingDetailPage({ params }: PageProps) {
                   B
                 </div>
                 <div>
-                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Destination</div>
-                  <div className="text-xs font-bold text-slate-900">{booking.destination_location_name}</div>
+                  <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Drop-off Destination
+                  </div>
+                  <div className="text-xs font-bold text-slate-900">
+                    {booking.destination_location_name}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Trip Specifications Summary */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
             <h3 className="font-bold text-xs uppercase tracking-wider text-slate-900 border-b border-slate-100 pb-2">
-              Booking Specifications
+              Staff Ride Details
             </h3>
 
             <div className="space-y-2 text-xs">
               <div className="flex justify-between py-1 border-b border-slate-50">
-                <span className="text-slate-500">Passenger Name</span>
-                <span className="font-semibold text-slate-900">{booking.passenger_name}</span>
+                <span className="text-slate-500">Staff Member</span>
+                <span className="font-semibold text-slate-900">{booking.staff_name}</span>
+              </div>
+              {booking.staff_badge && (
+                <div className="flex justify-between py-1 border-b border-slate-50">
+                  <span className="text-slate-500">Airport Badge</span>
+                  <span className="font-mono font-semibold text-slate-900">
+                    {booking.staff_badge}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between py-1 border-b border-slate-50">
+                <span className="text-slate-500">Riders</span>
+                <span className="font-semibold text-slate-900">
+                  {booking.passenger_count} Staff
+                </span>
               </div>
               <div className="flex justify-between py-1 border-b border-slate-50">
-                <span className="text-slate-500">Passenger Role</span>
-                <span className="font-semibold text-slate-900 capitalize">{booking.passenger_role}</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-50">
-                <span className="text-slate-500">Passenger Count</span>
-                <span className="font-semibold text-slate-900">{booking.passenger_count} Persons</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-slate-50">
-                <span className="text-slate-500">Booking Mode</span>
-                <span className="font-semibold text-slate-900 uppercase">{booking.booking_type}</span>
+                <span className="text-slate-500">Timing</span>
+                <span className="font-semibold text-slate-900 uppercase">
+                  {booking.booking_type === 'scheduled' && booking.scheduled_at
+                    ? new Date(booking.scheduled_at).toLocaleString()
+                    : 'Immediate Pickup'}
+                </span>
               </div>
               {booking.notes && (
                 <div className="py-1">
-                  <span className="text-slate-500 block text-[11px]">Instructions / Landmark:</span>
-                  <span className="font-medium text-slate-800 italic">"{booking.notes}"</span>
+                  <span className="text-slate-500 block text-[11px]">Driver Note:</span>
+                  <span className="font-medium text-slate-800 italic">&ldquo;{booking.notes}&rdquo;</span>
                 </div>
               )}
             </div>
@@ -303,7 +322,6 @@ export default function BookingDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      {/* Cancel Modal */}
       {isCancelModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
@@ -322,7 +340,7 @@ export default function BookingDetailPage({ params }: PageProps) {
             </div>
 
             <p className="mt-3 text-xs text-slate-600">
-              Please choose a reason for cancelling this trip request:
+              Please select a reason for cancelling this pickup request:
             </p>
 
             {cancelError && (
@@ -331,11 +349,10 @@ export default function BookingDetailPage({ params }: PageProps) {
 
             <div className="mt-3 space-y-1.5">
               {[
-                'Flight timing or terminal gate changed',
-                'No longer required / alternative transport found',
-                'Selected incorrect pickup or destination',
-                'Driver taking too long to arrive',
-                'Other operational reason',
+                'Shift / duty assignment changed',
+                'No longer need campus transport',
+                'Selected wrong pickup or drop-off location',
+                'Taking another available vehicle',
               ].map((reason) => (
                 <button
                   key={reason}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { AirportLocation, UserRole } from '@/types';
+import { AirportLocation } from '@/types';
 import {
   Boxes,
   Briefcase,
@@ -29,7 +29,6 @@ import {
   UtensilsCrossed,
   Wrench,
   X,
-  AlertTriangle,
 } from 'lucide-react';
 
 interface LocationSelectorProps {
@@ -39,11 +38,9 @@ interface LocationSelectorProps {
   onSelect: (location: AirportLocation) => void;
   excludeLocationId?: string;
   locations: AirportLocation[];
-  userRole: UserRole;
   isPickup?: boolean;
 }
 
-// Icon mapper for airport locations
 const iconMap: Record<string, React.ElementType> = {
   PlaneLanding,
   PlaneTakeoff,
@@ -76,7 +73,6 @@ export default function LocationSelector({
   onSelect,
   excludeLocationId,
   locations,
-  userRole,
   isPickup = true,
 }: LocationSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -86,7 +82,6 @@ export default function LocationSelector({
 
   const selectedLocation = locations.find((l) => l.id === selectedLocationId);
 
-  // Close dropdown when clicked outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -97,16 +92,10 @@ export default function LocationSelector({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Filter locations by permission, exclusion, search query, category
   const filteredLocations = locations.filter((loc) => {
     if (excludeLocationId && loc.id === excludeLocationId) return false;
     if (isPickup && !loc.pickup_allowed) return false;
     if (!isPickup && !loc.dropoff_allowed) return false;
-
-    // Filter restricted for passenger
-    if (loc.is_restricted && userRole === 'passenger' && !loc.restricted_roles.includes('passenger')) {
-      return false;
-    }
 
     if (selectedCategory !== 'all' && loc.category !== selectedCategory) {
       return false;
@@ -135,7 +124,6 @@ export default function LocationSelector({
         {label}
       </label>
 
-      {/* Selector Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -163,11 +151,9 @@ export default function LocationSelector({
                   <span className="font-semibold text-sm text-slate-900 truncate">
                     {selectedLocation.name}
                   </span>
-                  {selectedLocation.is_restricted && (
-                    <span className="rounded bg-amber-100 px-1.5 py-0.2 text-[10px] font-bold text-amber-800">
-                      Staff Restricted
-                    </span>
-                  )}
+                  <span className="rounded bg-slate-100 px-1.5 py-0.2 text-[10px] font-semibold text-slate-600">
+                    {selectedLocation.category}
+                  </span>
                 </div>
                 <div className="text-xs text-slate-500 truncate">{selectedLocation.description}</div>
               </>
@@ -182,10 +168,8 @@ export default function LocationSelector({
         />
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <div className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-          {/* Search Box */}
           <div className="relative mb-2">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             <input
@@ -193,7 +177,7 @@ export default function LocationSelector({
               autoFocus
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search airport location or terminal area..."
+              placeholder="Search airport building, gate, or zone..."
               className="w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-8 py-2 text-xs text-slate-900 focus:border-sky-500 focus:bg-white focus:outline-hidden"
             />
             {searchQuery && (
@@ -207,7 +191,6 @@ export default function LocationSelector({
             )}
           </div>
 
-          {/* Category Filter Pills */}
           <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-none">
             <button
               type="button"
@@ -236,7 +219,6 @@ export default function LocationSelector({
             ))}
           </div>
 
-          {/* Locations List */}
           <div className="max-h-60 overflow-y-auto space-y-1">
             {filteredLocations.length > 0 ? (
               filteredLocations.map((loc) => {
@@ -259,23 +241,15 @@ export default function LocationSelector({
                     }`}
                   >
                     <div className="flex items-center gap-2.5 overflow-hidden">
-                      <div
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                          loc.is_restricted
-                            ? 'bg-amber-100 text-amber-700'
-                            : 'bg-slate-100 text-slate-700'
-                        }`}
-                      >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
                         <LocIcon className="h-4 w-4" />
                       </div>
                       <div className="overflow-hidden">
                         <div className="flex items-center gap-1.5">
                           <span className="font-medium text-xs truncate">{loc.name}</span>
-                          {loc.is_restricted && (
-                            <span className="rounded bg-amber-50 border border-amber-200 px-1 text-[9px] font-semibold text-amber-700">
-                              Restricted
-                            </span>
-                          )}
+                          <span className="rounded bg-slate-100 px-1 text-[9px] font-medium text-slate-500">
+                            {loc.category}
+                          </span>
                         </div>
                         <div className="text-[10px] text-slate-500 truncate">{loc.description}</div>
                       </div>
@@ -287,7 +261,7 @@ export default function LocationSelector({
               })
             ) : (
               <div className="py-6 text-center text-xs text-slate-400">
-                No matching authorized airport locations found.
+                No matching airport locations found.
               </div>
             )}
           </div>

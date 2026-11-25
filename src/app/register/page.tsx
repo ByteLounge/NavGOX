@@ -5,15 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { UserRole } from '@/types';
-import {
-  Building2,
-  Bus,
-  CheckCircle2,
-  Mail,
-  Phone,
-  Shield,
-  User,
-} from 'lucide-react';
+import { Bus } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -22,9 +14,9 @@ export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('+91 ');
-  const [role, setRole] = useState<UserRole>('employee');
+  const [role, setRole] = useState<UserRole>('staff');
   const [badgeNumber, setBadgeNumber] = useState('');
-  const [department, setDepartment] = useState('GMR Airport Operations');
+  const [department, setDepartment] = useState('Airport Operations');
   const [error, setError] = useState<string | null>(null);
 
   const handleRegisterSubmit = (e: React.FormEvent) => {
@@ -34,7 +26,7 @@ export default function RegisterPage() {
       return;
     }
 
-    const success = register({
+    const profile = register({
       name: name.trim(),
       email: email.trim(),
       phone: phone.trim(),
@@ -44,11 +36,7 @@ export default function RegisterPage() {
       is_active: true,
     });
 
-    if (success) {
-      router.push('/dashboard');
-    } else {
-      setError('Registration failed.');
-    }
+    router.push(profile.role === 'driver' ? '/driver' : '/dashboard');
   };
 
   return (
@@ -58,10 +46,10 @@ export default function RegisterPage() {
           <Bus className="h-6 w-6 text-sky-400" />
         </div>
         <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-          Airport Transport Registration
+          Airport Staff & Driver Registration
         </h1>
         <p className="text-xs text-slate-500">
-          Create an authorized account for Manohar International Airport
+          Create an account for Manohar International Airport campus transit
         </p>
       </div>
 
@@ -90,14 +78,14 @@ export default function RegisterPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                Official Email
+                Airport Email
               </label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@gmrgroup.in"
+                placeholder="name@mopa.aero"
                 className="w-full rounded-xl border border-slate-200 p-2.5 text-xs text-slate-900 focus:border-sky-500 focus:outline-hidden"
               />
             </div>
@@ -119,15 +107,14 @@ export default function RegisterPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-                Account Type
+                Role
               </label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value as UserRole)}
                 className="w-full rounded-xl border border-slate-200 p-2.5 text-xs font-semibold capitalize text-slate-900 focus:border-sky-500"
               >
-                <option value="employee">Airport Employee</option>
-                <option value="passenger">Passenger</option>
+                <option value="staff">Airport Staff</option>
                 <option value="driver">Campus Driver</option>
               </select>
             </div>
@@ -147,13 +134,13 @@ export default function RegisterPage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase mb-1">
-              Department / Handling Agency
+              Department / Team
             </label>
             <input
               type="text"
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
-              placeholder="e.g. Terminal Operations, CISF Security, Air India Ground Staff"
+              placeholder="e.g. Terminal Operations, CISF Security, Campus Transport"
               className="w-full rounded-xl border border-slate-200 p-2.5 text-xs text-slate-900 focus:border-sky-500 focus:outline-hidden"
             />
           </div>
@@ -167,7 +154,7 @@ export default function RegisterPage() {
         </form>
 
         <div className="mt-4 pt-3 border-t border-slate-100 text-center text-xs text-slate-500">
-          Already have an airport transport account?{' '}
+          Already have an account?{' '}
           <Link href="/login" className="font-semibold text-sky-600 hover:text-sky-700">
             Sign In
           </Link>

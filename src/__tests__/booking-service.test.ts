@@ -3,24 +3,27 @@ import { BookingService, CreateBookingInput } from '../lib/booking-service';
 import { StorageService } from '../lib/storage';
 import { UserProfile } from '../types';
 
-describe('MOPA Airport Booking Service Logic', () => {
-  const passengerUser: UserProfile = {
-    id: 'test-passenger-1',
-    name: 'Passenger Test',
-    email: 'p@mopa.aero',
-    phone: '+91 99999 11111',
-    role: 'passenger',
+describe('MOPA Airport Staff & Driver Pickup Service', () => {
+  const staffUser: UserProfile = {
+    id: 'test-staff-1',
+    name: 'Vikram Joshi',
+    email: 'vikram.joshi@mopa.aero',
+    phone: '+91 98230 44556',
+    role: 'staff',
+    badge_number: 'GGIAL-EMP-4089',
+    department: 'Airport Operations',
     is_active: true,
     created_at: new Date().toISOString(),
   };
 
-  const employeeUser: UserProfile = {
-    id: 'test-employee-1',
-    name: 'Employee Test',
-    email: 'e@gmrgroup.in',
-    phone: '+91 99999 22222',
-    role: 'employee',
-    badge_number: 'EMP-900',
+  const driverUser: UserProfile = {
+    id: 'test-driver-1',
+    name: 'Rajesh Naik',
+    email: 'rajesh.naik@mopa.aero',
+    phone: '+91 98221 44001',
+    role: 'driver',
+    badge_number: 'MOPA-DRV-101',
+    department: 'Campus Transport Fleet',
     is_active: true,
     created_at: new Date().toISOString(),
   };
@@ -29,43 +32,41 @@ describe('MOPA Airport Booking Service Logic', () => {
     StorageService.resetToDefaults();
   });
 
-  it('rejects booking when pickup and destination are identical', () => {
+  it('rejects booking when pickup and drop-off are identical', () => {
     const input: CreateBookingInput = {
-      pickup_location_id: 'loc-01', // Arrival
-      destination_location_id: 'loc-01', // Arrival
+      pickup_location_id: 'loc-08',
+      destination_location_id: 'loc-08',
       passenger_count: 1,
       booking_type: 'now',
       special_requirements: {
         luggage_assistance: false,
         wheelchair_accessible: false,
-        special_assistance: false,
       },
     };
 
-    const result = BookingService.validateBookingInput(input, 'passenger');
+    const result = BookingService.validateBookingInput(input);
     expect(result.valid).toBe(false);
     expect(result.errors.destination_location_id).toContain('same location');
   });
 
-  it('prevents public passenger from booking restricted operational locations (e.g. ATC Office)', () => {
+  it('rejects locations outside the approved airport premises list', () => {
     const input: CreateBookingInput = {
-      pickup_location_id: 'loc-01', // Arrival
-      destination_location_id: 'loc-07', // ATC Office (restricted)
+      pickup_location_id: 'loc-08',
+      destination_location_id: 'outside-panaji',
       passenger_count: 1,
       booking_type: 'now',
       special_requirements: {
         luggage_assistance: false,
         wheelchair_accessible: false,
-        special_assistance: false,
       },
     };
 
-    const result = BookingService.validateBookingInput(input, 'passenger');
+    const result = BookingService.validateBookingInput(input);
     expect(result.valid).toBe(false);
-    expect(result.errors.destination_location_id).toContain('Security restriction');
+    expect(result.errors.destination_location_id).toContain('airport premises');
   });
 
-  it('allows airport employees with credentials to book restricted operational locations', () => {
+  it('allows airport staff to request pickup between any active airport premises locations', () => {
     const input: CreateBookingInput = {
       pickup_location_id: 'loc-08', // GMR Office
       destination_location_id: 'loc-07', // ATC Office
@@ -74,16 +75,33 @@ describe('MOPA Airport Booking Service Logic', () => {
       special_requirements: {
         luggage_assistance: false,
         wheelchair_accessible: false,
-        special_assistance: false,
       },
     };
 
-    const result = BookingService.validateBookingInput(input, 'employee');
-    expect(result.valid).toBe(true);
-    expect(Object.keys(result.errors).length).toBe(0);
+    const result = BookingService.createBooking(input, staffUser);
+    expect(result.success).toBe(true);
+    expect(result.booking?.status).toBe('requested');
+    expect(result.booking?.staff_id).toBe(staffUser.id);
   });
 
-  it('rejects booking when passenger count is greater than maximum permitted (14)', () => {
+  it('prevents driver accounts from submitting staff ride requests', () => {
+    const input: CreateBookingInput = {
+      pickup_location_id: 'loc-01',
+      destination_location_id: 'loc-07',
+      passenger_count: 1,
+      booking_type: 'now',
+      special_requirements: {
+        luggage_assistance: false,
+        wheelchair_accessible: false,
+      },
+    };
+
+    const result = BookingService.createBooking(input, driverUser);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('Only airport staff');
+  });
+
+  it('rejects booking when rider count exceeds maximum vehicle capacity (14)', () => {
     const input: CreateBookingInput = {
       pickup_location_id: 'loc-01',
       destination_location_id: 'loc-04',
@@ -92,90 +110,63 @@ describe('MOPA Airport Booking Service Logic', () => {
       special_requirements: {
         luggage_assistance: false,
         wheelchair_accessible: false,
-        special_assistance: false,
       },
     };
 
-    const result = BookingService.validateBookingInput(input, 'passenger');
+    const result = BookingService.validateBookingInput(input);
     expect(result.valid).toBe(false);
-    expect(result.errors.passenger_count).toContain('Maximum passenger capacity');
+    expect(result.errors.passenger_count).toContain('Maximum capacity');
   });
 
-  it('prevents double assignment: cannot assign vehicle that is already engaged in active trip', () => {
-    // bk-1001 is already on active trip with veh-01 in seed data
-    const activeBooking = StorageService.getBookingById('bk-1001');
+  it('prevents double assignment when driver or vehicle is already on an active trip', () => {
+    // Seed bk-1002 is in_transit with drv-02 and veh-02
+    const activeBooking = StorageService.getBookingById('bk-1002');
     expect(activeBooking?.status).toBe('in_transit');
 
-    // Create a new pending booking
-    const newBookingRes = BookingService.createBooking(
+    const newReq = BookingService.createBooking(
       {
         pickup_location_id: 'loc-05',
-        destination_location_id: 'loc-06',
+        destination_location_id: 'loc-09',
         passenger_count: 2,
         booking_type: 'now',
         special_requirements: {
           luggage_assistance: false,
           wheelchair_accessible: false,
-          special_assistance: false,
         },
       },
-      passengerUser
+      staffUser
     );
 
-    expect(newBookingRes.success).toBe(true);
-    const newBookingId = newBookingRes.booking!.id;
-
-    // Try to manually assign veh-01 (which is active on bk-1001)
-    const assignResult = BookingService.assignVehicleAndDriver(
-      newBookingId,
-      'veh-01',
-      'drv-04',
-      'Operations Dispatcher',
-      'ops-admin'
-    );
-
-    expect(assignResult.success).toBe(false);
-    expect(assignResult.error).toContain('Conflict');
-    expect(assignResult.error).toContain('currently engaged');
+    expect(newReq.success).toBe(true);
+    const acceptRes = BookingService.acceptBooking(newReq.booking!.id, 'drv-02');
+    expect(acceptRes.success).toBe(false);
+    expect(acceptRes.error).toContain('already on an active trip');
   });
 
-  it('prevents assigning vehicle without wheelchair features when wheelchair assistance is required', () => {
-    const newBookingRes = BookingService.createBooking(
+  it('prevents driver without wheelchair ramp vehicle from accepting accessible ride request', () => {
+    const req = BookingService.createBooking(
       {
         pickup_location_id: 'loc-01',
-        destination_location_id: 'loc-02',
+        destination_location_id: 'loc-03',
         passenger_count: 2,
         booking_type: 'now',
         special_requirements: {
           luggage_assistance: false,
-          wheelchair_accessible: true, // Wheelchair required
-          special_assistance: false,
+          wheelchair_accessible: true,
         },
       },
-      passengerUser
+      staffUser
     );
 
-    const bookingId = newBookingRes.booking!.id;
-
-    // veh-04 (Executive Innova MPV) does NOT have accessibility_features and is available
-    const assignResult = BookingService.assignVehicleAndDriver(
-      bookingId,
-      'veh-04',
-      'drv-04',
-      'Operations Dispatcher',
-      'ops-admin'
-    );
-
-    expect(assignResult.success).toBe(false);
-    expect(assignResult.error).toContain('wheelchair accessibility');
+    expect(req.success).toBe(true);
+    // drv-04 drives veh-04 (Executive Innova MPV) which does not have accessibility_features
+    const acceptRes = BookingService.acceptBooking(req.booking!.id, 'drv-04');
+    expect(acceptRes.success).toBe(false);
+    expect(acceptRes.error).toContain('wheelchair ramp access');
   });
 
-  it('progresses booking through the full airport transit lifecycle and releases resources on complete', () => {
-    // Disable auto-dispatch to test manual dispatcher assignment sequence
-    StorageService.saveSettings({ ...StorageService.getSettings(), auto_dispatch_enabled: false });
-
-    // Create new booking for employee
-    const newBookingRes = BookingService.createBooking(
+  it('completes the simplified Staff Request -> Driver Accept -> Picked Up -> Dropped Off lifecycle', () => {
+    const req = BookingService.createBooking(
       {
         pickup_location_id: 'loc-08',
         destination_location_id: 'loc-09',
@@ -184,40 +175,33 @@ describe('MOPA Airport Booking Service Logic', () => {
         special_requirements: {
           luggage_assistance: false,
           wheelchair_accessible: false,
-          special_assistance: false,
         },
       },
-      employeeUser
+      staffUser
     );
-    const bookingId = newBookingRes.booking!.id;
+    expect(req.success).toBe(true);
+    const bookingId = req.booking!.id;
 
-    // Assign available vehicle (veh-05) and driver (drv-05)
-    const assignRes = BookingService.assignVehicleAndDriver(
-      bookingId,
-      'veh-05',
-      'drv-05',
-      'Dispatcher Pooja',
-      'usr-dispatcher-1'
-    );
-    expect(assignRes.success).toBe(true);
+    // Driver accepts pickup
+    const acceptRes = BookingService.acceptBooking(bookingId, 'drv-05');
+    expect(acceptRes.success).toBe(true);
+    expect(StorageService.getBookingById(bookingId)?.status).toBe('driver_accepted');
 
-    // Sequence of transitions
-    expect(BookingService.updateBookingStatus(bookingId, 'driver_accepted', 'Santosh Parab', 'drv-05').success).toBe(true);
-    expect(BookingService.updateBookingStatus(bookingId, 'driver_arriving', 'Santosh Parab', 'drv-05').success).toBe(true);
-    expect(BookingService.updateBookingStatus(bookingId, 'arrived_pickup', 'Santosh Parab', 'drv-05').success).toBe(true);
-    expect(BookingService.updateBookingStatus(bookingId, 'passenger_onboard', 'Santosh Parab', 'drv-05').success).toBe(true);
-    expect(BookingService.updateBookingStatus(bookingId, 'in_transit', 'Santosh Parab', 'drv-05').success).toBe(true);
+    // Driver confirms staff picked up
+    expect(
+      BookingService.updateBookingStatus(bookingId, 'in_transit', 'Santosh Parab', 'drv-05').success
+    ).toBe(true);
+    const inTransitBooking = StorageService.getBookingById(bookingId)!;
+    expect(inTransitBooking.status).toBe('in_transit');
+    expect(inTransitBooking.started_at).toBeDefined();
 
-    const midTripBooking = StorageService.getBookingById(bookingId)!;
-    expect(midTripBooking.status).toBe('in_transit');
-    expect(midTripBooking.started_at).toBeDefined();
-
-    // Complete ride
-    expect(BookingService.updateBookingStatus(bookingId, 'completed', 'Santosh Parab', 'drv-05').success).toBe(true);
-
-    const finishedBooking = StorageService.getBookingById(bookingId)!;
-    expect(finishedBooking.status).toBe('completed');
-    expect(finishedBooking.completed_at).toBeDefined();
+    // Driver confirms dropped off -> releases driver and vehicle
+    expect(
+      BookingService.updateBookingStatus(bookingId, 'completed', 'Santosh Parab', 'drv-05').success
+    ).toBe(true);
+    const completedBooking = StorageService.getBookingById(bookingId)!;
+    expect(completedBooking.status).toBe('completed');
+    expect(completedBooking.completed_at).toBeDefined();
 
     const releasedVehicle = StorageService.getVehicles().find((v) => v.id === 'veh-05');
     const releasedDriver = StorageService.getDrivers().find((d) => d.id === 'drv-05');
@@ -226,28 +210,34 @@ describe('MOPA Airport Booking Service Logic', () => {
     expect(releasedDriver?.current_booking_id).toBeNull();
   });
 
-  it('releases vehicle and driver when booking is cancelled', () => {
-    // bk-1002 is at arrived_pickup with veh-02 and drv-02
-    const booking = StorageService.getBookingById('bk-1002')!;
-    expect(booking.assigned_vehicle_id).toBe('veh-02');
-    expect(booking.assigned_driver_id).toBe('drv-02');
+  it('releases driver and vehicle when a ride request is cancelled before pickup', () => {
+    const req = BookingService.createBooking(
+      {
+        pickup_location_id: 'loc-08',
+        destination_location_id: 'loc-14',
+        passenger_count: 1,
+        booking_type: 'now',
+        special_requirements: {
+          luggage_assistance: false,
+          wheelchair_accessible: false,
+        },
+      },
+      staffUser
+    );
+    const bookingId = req.booking!.id;
+
+    expect(BookingService.acceptBooking(bookingId, 'drv-01').success).toBe(true);
+    expect(StorageService.getVehicles().find((v) => v.id === 'veh-01')?.status).toBe('on_trip');
 
     const cancelRes = BookingService.cancelBooking(
-      'bk-1002',
-      'Passenger had flight gate changed',
-      'Dispatcher Pooja',
-      'usr-dispatcher-1'
+      bookingId,
+      'Shift assignment changed',
+      staffUser.name,
+      staffUser.id
     );
-
     expect(cancelRes.success).toBe(true);
-
-    const cancelledBooking = StorageService.getBookingById('bk-1002')!;
-    expect(cancelledBooking.status).toBe('cancelled');
-    expect(cancelledBooking.cancellation_reason).toContain('Passenger had flight gate changed');
-
-    const freedVehicle = StorageService.getVehicles().find((v) => v.id === 'veh-02');
-    const freedDriver = StorageService.getDrivers().find((d) => d.id === 'drv-02');
-    expect(freedVehicle?.status).toBe('available');
-    expect(freedDriver?.status).toBe('available');
+    expect(StorageService.getBookingById(bookingId)?.status).toBe('cancelled');
+    expect(StorageService.getVehicles().find((v) => v.id === 'veh-01')?.status).toBe('available');
+    expect(StorageService.getDrivers().find((d) => d.id === 'drv-01')?.status).toBe('available');
   });
 });

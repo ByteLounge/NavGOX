@@ -4,16 +4,9 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Booking, BookingStatus } from '@/types';
 import {
-  Accessibility,
   AlertTriangle,
-  ArrowRight,
-  Car,
   ChevronRight,
-  Clock,
-  MapPin,
   Phone,
-  Shield,
-  User,
   X,
 } from 'lucide-react';
 import { BookingService } from '@/lib/booking-service';
@@ -25,17 +18,11 @@ interface ActiveBookingCardProps {
 }
 
 const statusBadgeStyles: Record<BookingStatus, { bg: string; text: string; label: string }> = {
-  requested: { bg: 'bg-amber-100 border-amber-200', text: 'text-amber-800', label: 'Requested' },
-  searching: { bg: 'bg-amber-100 border-amber-200', text: 'text-amber-800', label: 'Searching Vehicle' },
-  assigned: { bg: 'bg-sky-100 border-sky-200', text: 'text-sky-800', label: 'Vehicle Assigned' },
-  driver_accepted: { bg: 'bg-sky-100 border-sky-200', text: 'text-sky-800', label: 'Driver Confirmed' },
-  driver_arriving: { bg: 'bg-indigo-100 border-indigo-200', text: 'text-indigo-800', label: 'Driver Arriving' },
-  arrived_pickup: { bg: 'bg-purple-100 border-purple-200', text: 'text-purple-800', label: 'At Pickup Point' },
-  passenger_onboard: { bg: 'bg-teal-100 border-teal-200', text: 'text-teal-800', label: 'Passenger Boarded' },
-  in_transit: { bg: 'bg-emerald-100 border-emerald-200', text: 'text-emerald-800', label: 'In Transit' },
-  completed: { bg: 'bg-slate-100 border-slate-200', text: 'text-slate-700', label: 'Completed' },
+  requested: { bg: 'bg-amber-100 border-amber-200', text: 'text-amber-800', label: 'Waiting for Driver' },
+  driver_accepted: { bg: 'bg-sky-100 border-sky-200', text: 'text-sky-800', label: 'Driver En Route' },
+  in_transit: { bg: 'bg-emerald-100 border-emerald-200', text: 'text-emerald-800', label: 'Picked Up • In Transit' },
+  completed: { bg: 'bg-slate-100 border-slate-200', text: 'text-slate-700', label: 'Dropped Off' },
   cancelled: { bg: 'bg-rose-100 border-rose-200', text: 'text-rose-800', label: 'Cancelled' },
-  rejected: { bg: 'bg-rose-100 border-rose-200', text: 'text-rose-800', label: 'Rejected' },
 };
 
 export default function ActiveBookingCard({ booking, onUpdate }: ActiveBookingCardProps) {
@@ -50,14 +37,12 @@ export default function ActiveBookingCard({ booking, onUpdate }: ActiveBookingCa
     label: booking.status,
   };
 
-  const canCancel = ['requested', 'searching', 'assigned', 'driver_accepted', 'driver_arriving'].includes(
-    booking.status
-  );
+  const canCancel = ['requested', 'driver_accepted'].includes(booking.status);
 
   const handleCancelConfirm = () => {
     if (!user) return;
     if (!cancelReason.trim()) {
-      setCancelError('Please select or state a reason for cancellation.');
+      setCancelError('Please select a reason for cancellation.');
       return;
     }
 
@@ -70,15 +55,14 @@ export default function ActiveBookingCard({ booking, onUpdate }: ActiveBookingCa
 
     if (res.success) {
       setIsCancelModalOpen(false);
-      if (onUpdate) onUpdate();
+      onUpdate?.();
     } else {
-      setCancelError(res.error || 'Failed to cancel booking.');
+      setCancelError(res.error || 'Failed to cancel ride request.');
     }
   };
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md">
-      {/* Top Header: Reference & Status Badge */}
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
         <div className="flex items-center gap-2">
           <span className="font-mono text-xs font-bold text-slate-900 tracking-wider">
@@ -97,7 +81,6 @@ export default function ActiveBookingCard({ booking, onUpdate }: ActiveBookingCa
         </span>
       </div>
 
-      {/* Locations Flow */}
       <div className="mt-3.5 space-y-2">
         <div className="flex items-start gap-2.5">
           <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-700 font-bold text-[10px]">
@@ -114,14 +97,13 @@ export default function ActiveBookingCard({ booking, onUpdate }: ActiveBookingCa
             B
           </div>
           <div>
-            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Destination</div>
+            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Drop-off</div>
             <div className="text-xs font-bold text-slate-900">{booking.destination_location_name}</div>
           </div>
         </div>
       </div>
 
-      {/* Driver & Vehicle Info if assigned */}
-      {booking.assigned_vehicle && booking.assigned_driver && (
+      {booking.assigned_vehicle && booking.assigned_driver ? (
         <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/70 p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -147,15 +129,18 @@ export default function ActiveBookingCard({ booking, onUpdate }: ActiveBookingCa
             </a>
           </div>
         </div>
+      ) : (
+        <div className="mt-4 rounded-xl border border-dashed border-amber-200 bg-amber-50/60 p-3 text-xs text-amber-800 font-medium">
+          Waiting for an available campus driver to accept your pickup request...
+        </div>
       )}
 
-      {/* Action Buttons */}
       <div className="mt-4 flex items-center justify-between pt-3 border-t border-slate-100 gap-2">
         <Link
           href={`/booking/${booking.id}`}
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-sky-600 hover:text-sky-700 transition"
         >
-          <span>Live Tracking & Details</span>
+          <span>Live Status & Route</span>
           <ChevronRight className="h-4 w-4" />
         </Link>
 
@@ -165,19 +150,18 @@ export default function ActiveBookingCard({ booking, onUpdate }: ActiveBookingCa
             onClick={() => setIsCancelModalOpen(true)}
             className="rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition"
           >
-            Cancel Trip
+            Cancel Ride
           </button>
         )}
       </div>
 
-      {/* Cancel Modal */}
       {isCancelModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2 text-rose-600 font-bold text-sm">
                 <AlertTriangle className="h-5 w-5" />
-                <span>Cancel Booking {booking.booking_reference}</span>
+                <span>Cancel Request {booking.booking_reference}</span>
               </div>
               <button
                 type="button"
@@ -189,7 +173,7 @@ export default function ActiveBookingCard({ booking, onUpdate }: ActiveBookingCa
             </div>
 
             <p className="mt-3 text-xs text-slate-600 leading-relaxed">
-              Cancelling will release the assigned vehicle and driver back to the campus staging pool. Please state a reason:
+              Cancelling will release any assigned driver back to available pickup duty. Choose a reason:
             </p>
 
             {cancelError && (
@@ -198,11 +182,10 @@ export default function ActiveBookingCard({ booking, onUpdate }: ActiveBookingCa
 
             <div className="mt-3 space-y-1.5">
               {[
-                'Flight timing or terminal gate changed',
-                'No longer required / alternative transport found',
-                'Selected incorrect pickup or destination',
-                'Driver taking too long to arrive',
-                'Other operational reason',
+                'Shift / duty assignment changed',
+                'No longer need campus transport',
+                'Selected wrong pickup or drop-off location',
+                'Taking another available vehicle',
               ].map((reason) => (
                 <button
                   key={reason}
@@ -225,7 +208,7 @@ export default function ActiveBookingCard({ booking, onUpdate }: ActiveBookingCa
                 onClick={() => setIsCancelModalOpen(false)}
                 className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
               >
-                Keep Booking
+                Keep Request
               </button>
               <button
                 type="button"
